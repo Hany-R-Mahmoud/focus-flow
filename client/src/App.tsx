@@ -14,6 +14,7 @@ import WeeklyReview from "./pages/WeeklyReview";
 import Settings from "./pages/Settings";
 import Sidebar from "./components/Sidebar";
 import { useEffect } from "react";
+import { useLocation } from "wouter";
 import CreateGroupSession from "./pages/CreateGroupSession";
 import GroupSessionPreview from "./pages/GroupSessionPreview";
 import GroupSessions from "./pages/GroupSessions";
@@ -46,11 +47,13 @@ function Router() {
 function AppContent() {
   // Initialize reminders
   useSessionReminders();
+  const [location] = useLocation();
+  const isLandingPage = location === "/";
 
   return (
-    <div className="flex h-screen">
-      <Sidebar />
-      <main className="flex-1 overflow-auto">
+    <div className={isLandingPage ? "min-h-screen" : "flex h-screen"}>
+      {!isLandingPage && <Sidebar />}
+      <main className={isLandingPage ? "min-h-screen" : "flex-1 overflow-auto"}>
         <Router />
       </main>
     </div>

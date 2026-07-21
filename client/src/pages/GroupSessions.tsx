@@ -19,8 +19,11 @@ export default function GroupSessions() {
   const [sessions, setSessions] = useState<GroupSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSession, setSelectedSession] = useState<GroupSession | null>(null);
+  const [joinSession, setJoinSession] = useState<GroupSession | null>(null);
+  const [participantName, setParticipantName] = useState("");
   const [templateName, setTemplateName] = useState("");
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  const [showJoinDialog, setShowJoinDialog] = useState(false);
 
   useEffect(() => {
     loadSessions();
@@ -77,13 +80,19 @@ export default function GroupSessions() {
   };
 
   const handleJoinSession = (session: GroupSession) => {
-    // Add current user as participant
-    const participantName = prompt("Enter your name (optional):");
-    if (participantName !== null) {
-      addParticipant(session.id, participantName || "Anonymous");
-      toast.success("You've joined the session!");
-      setLocation(`/active-group/${session.id}`);
-    }
+    setJoinSession(session);
+    setParticipantName("");
+    setShowJoinDialog(true);
+  };
+
+  const confirmJoinSession = () => {
+    if (!joinSession) return;
+
+    addParticipant(joinSession.id, participantName || "Anonymous");
+    toast.success("You've joined the session!");
+    setShowJoinDialog(false);
+    setJoinSession(null);
+    setLocation(`/active-group/${joinSession.id}`);
   };
 
   if (loading) {
@@ -240,6 +249,33 @@ export default function GroupSessions() {
           );
         })}
       </div>
+
+      <Dialog open={showJoinDialog} onOpenChange={setShowJoinDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Join {joinSession?.title}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="participant-name" className="text-sm font-medium">Your name</label>
+              <Input
+                id="participant-name"
+                value={participantName}
+                onChange={(event) => setParticipantName(event.target.value)}
+                placeholder="e.g., Hany"
+                autoFocus
+                maxLength={50}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                This name is stored locally in this browser.
+              </p>
+            </div>
+            <Button onClick={confirmJoinSession} className="w-full">
+              Join Session
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Button
         onClick={() => setLocation("/create-group-session")}

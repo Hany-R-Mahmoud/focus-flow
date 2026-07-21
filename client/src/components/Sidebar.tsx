@@ -22,7 +22,7 @@ export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
 
   const navItems: NavItem[] = [
-    { label: "Dashboard", href: "/", icon: <LayoutDashboard size={20} /> },
+    { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard size={20} /> },
     { label: "Templates", href: "/templates", icon: <Clock size={20} /> },
     { label: "Group Sessions", href: "/group-sessions", icon: <Users size={20} /> },
     { label: "History", href: "/history", icon: <History size={20} /> },

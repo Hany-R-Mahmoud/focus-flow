@@ -2,9 +2,12 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { getGroupSessions, createGroupSession, initDB } from "@/lib/db";
 import { GroupSession } from "@/lib/db";
+import { addParticipant } from "@/lib/participants";
 import {
   extractPayloadFromHash,
   calculateSessionStatus,
@@ -19,6 +22,8 @@ export default function GroupSessionPreview() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string>("upcoming");
+  const [participantName, setParticipantName] = useState("");
+  const [showJoinDialog, setShowJoinDialog] = useState(false);
 
   useEffect(() => {
     loadSession();
@@ -90,20 +95,20 @@ export default function GroupSessionPreview() {
     }
   };
 
-  const handleJoinSession = async () => {
+  const handleJoinSession = () => {
     if (!session) return;
 
-    setLoading(true);
-    try {
-      // Session already exists in database, just redirect to it
-      toast.success("Session joined! Redirecting...");
-      setTimeout(() => setLocation("/group-sessions"), 1000);
-    } catch (err) {
-      console.error("Error joining session:", err);
-      toast.error("Failed to join session");
-    } finally {
-      setLoading(false);
-    }
+    setParticipantName("");
+    setShowJoinDialog(true);
+  };
+
+  const confirmJoinSession = () => {
+    if (!session) return;
+
+    addParticipant(session.id, participantName || "Anonymous");
+    setShowJoinDialog(false);
+    toast.success("Session joined!");
+    setLocation(`/active-group/${session.id}`);
   };
 
   if (loading) {
@@ -220,8 +225,8 @@ export default function GroupSessionPreview() {
           <ul className="space-y-1 text-xs">
             <li>• You join this session independently on your device</li>
             <li>• Your personal session data stays private</li>
-            <li>• Only your name is shared with other participants</li>
-            <li>• All data is stored locally in your browser</li>
+          <li>• Your name is stored locally in this browser</li>
+          <li>• Live cross-device participant presence is not enabled</li>
           </ul>
         </div>
 
@@ -244,6 +249,33 @@ export default function GroupSessionPreview() {
           </Button>
         </div>
       </Card>
+
+      <Dialog open={showJoinDialog} onOpenChange={setShowJoinDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Join {session.title}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="preview-participant-name" className="text-sm font-medium">Your name</label>
+              <Input
+                id="preview-participant-name"
+                value={participantName}
+                onChange={(event) => setParticipantName(event.target.value)}
+                placeholder="e.g., Hany"
+                autoFocus
+                maxLength={50}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                This name is stored locally in this browser.
+              </p>
+            </div>
+            <Button onClick={confirmJoinSession} className="w-full">
+              Enter Session
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

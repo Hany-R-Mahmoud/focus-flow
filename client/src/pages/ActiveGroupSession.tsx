@@ -2,14 +2,16 @@ import { useEffect, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { getGroupSession, updateGroupSession, initDB } from "@/lib/db";
-import { calculateSessionStatus, calculateTimeRemaining } from "@/lib/groupSession";
-import { GroupSession } from "@/lib/db";
-import { AlertCircle, Copy, Check, ExternalLink } from "lucide-react";
+import { getGroupSession, initDB } from "@/lib/db";
+import { calculateSessionStatus, calculateTimeRemaining, generateGroupSessionLink } from "@/lib/groupSession";
+import type { Distraction, GroupSession } from "@/lib/db";
+import { getSessionParticipants, type Participant } from "@/lib/participants";
+import { AlertCircle, Copy, Check, ExternalLink, Share2 } from "lucide-react";
 
 export default function ActiveGroupSession() {
   const [, setLocation] = useLocation();
@@ -21,10 +23,19 @@ export default function ActiveGroupSession() {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [outcome, setOutcome] = useState("");
   const [reflection, setReflection] = useState("");
-  const [distractionCount, setDistractionCount] = useState(0);
+  const [interruptions, setInterruptions] = useState<Distraction[]>([]);
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [interruptionForm, setInterruptionForm] = useState({
+    category: "other",
+    note: "",
+  });
+  const [showInterruptionDialog, setShowInterruptionDialog] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [inviteCopied, setInviteCopied] = useState(false);
+
+  const getInterruptionStorageKey = (id: string) => `focusflow_group_interruptions_${id}`;
 
   useEffect(() => {
     loadSession();
@@ -67,6 +78,13 @@ export default function ActiveGroupSession() {
         return;
       }
       setSession(loaded);
+      try {
+        const storedInterruptions = localStorage.getItem(getInterruptionStorageKey(loaded.id));
+        setInterruptions(storedInterruptions ? JSON.parse(storedInterruptions) : []);
+      } catch {
+        setInterruptions([]);
+      }
+      setParticipants(getSessionParticipants(loaded.id));
     } catch (err) {
       console.error("Error loading session:", err);
       setError("Failed to load session");
@@ -114,8 +132,8 @@ export default function ActiveGroupSession() {
     if (outcome) {
       summary += `Outcome: ${outcome}\n`;
     }
-    if (distractionCount > 0) {
-      summary += `Distractions recorded: ${distractionCount}\n`;
+    if (interruptions.length > 0) {
+      summary += `Interruptions recorded: ${interruptions.length}\n`;
     }
     if (reflection) {
       summary += `Reflection: ${reflection}`;
@@ -132,6 +150,53 @@ export default function ActiveGroupSession() {
       setTimeout(() => setCopied(false), 2000);
     } catch {
       toast.error("Failed to copy");
+    }
+  };
+
+  const handleAddInterruption = () => {
+    if (!session) return;
+
+    const interruption: Distraction = {
+      id: `group_dist_${Date.now()}`,
+      sessionId: session.id,
+      time: Date.now(),
+      category: interruptionForm.category,
+      note: interruptionForm.note.trim(),
+    };
+
+    const nextInterruptions = [...interruptions, interruption];
+    setInterruptions(nextInterruptions);
+    localStorage.setItem(getInterruptionStorageKey(session.id), JSON.stringify(nextInterruptions));
+    setInterruptionForm({ category: "other", note: "" });
+    setShowInterruptionDialog(false);
+    toast.success("Interruption logged");
+  };
+
+  const getInviteLink = (): string => {
+    if (!session) return "";
+
+    return generateGroupSessionLink({
+      version: session.payloadVersion,
+      sessionId: session.id.startsWith("gs_") ? session.id : `gs_${session.id}`,
+      title: session.title,
+      sharedObjective: session.sharedObjective,
+      startsAt: session.startsAt,
+      focusMinutes: session.focusMinutes,
+      breakMinutes: session.breakMinutes,
+      meetingUrl: session.meetingUrl,
+      organizerName: session.organizerName,
+      openingMessage: session.openingMessage,
+    });
+  };
+
+  const handleCopyInviteLink = async () => {
+    try {
+      await navigator.clipboard.writeText(getInviteLink());
+      setInviteCopied(true);
+      toast.success("Invite link copied");
+      setTimeout(() => setInviteCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy invite link");
     }
   };
 
@@ -224,19 +289,28 @@ export default function ActiveGroupSession() {
               </div>
 
               <div>
-                <Label htmlFor="distractions" className="text-sm font-medium text-slate-700">
-                  Distractions recorded
-                </Label>
-                <Input
-                  id="distractions"
-                  type="number"
-                  min="0"
-                  value={distractionCount}
-                  onChange={(e) => setDistractionCount(parseInt(e.target.value) || 0)}
-                  className="mt-2"
-                />
+                <p className="text-sm font-medium text-slate-700">Interruptions recorded</p>
+                <p className="mt-2 text-sm text-slate-600">{interruptions.length}</p>
               </div>
             </div>
+
+            {interruptions.length > 0 && (
+              <div className="border-t pt-6 mt-6">
+                <h3 className="font-semibold text-slate-900 mb-3">Your interruptions</h3>
+                <div className="space-y-2">
+                  {interruptions.map((interruption) => (
+                    <div key={interruption.id} className="text-sm p-3 bg-slate-50 rounded flex items-start gap-3">
+                      <span className="text-xs font-semibold text-teal-700 uppercase">
+                        {interruption.category}
+                      </span>
+                      <span className="text-slate-600 flex-1">
+                        {interruption.note || "No note added"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="border-t pt-6 mt-6">
               <h3 className="font-semibold text-slate-900 mb-3">Completion Summary</h3>
@@ -341,23 +415,127 @@ export default function ActiveGroupSession() {
           </p>
         </div>
 
-        <div className="flex gap-3">
+        <Card className="p-6 mb-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="font-semibold text-slate-900">Participants on this browser</h2>
+              <p className="text-sm text-slate-600 mt-1">
+                {participants.length === 0
+                  ? "No participants recorded here yet."
+                  : `${participants.length} ${participants.length === 1 ? "person" : "people"} joined here.`}
+              </p>
+            </div>
+            <span className="text-2xl font-semibold text-teal-700" aria-label={`${participants.length} local participants`}>
+              {participants.length}
+            </span>
+          </div>
+          {participants.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-4" aria-label="Local participant names">
+              {participants.map((participant) => (
+                <span key={participant.id} className="px-3 py-1 rounded-full bg-teal-50 text-teal-800 text-sm">
+                  {participant.name}
+                </span>
+              ))}
+            </div>
+          )}
+          <p className="text-xs text-slate-500 mt-4">
+            This roster is local to this browser; live cross-device presence is not enabled.
+          </p>
+        </Card>
+
+        {interruptions.length > 0 && (
+          <Card className="p-6 mb-6">
+            <h2 className="font-semibold text-slate-900 mb-3">Your interruptions ({interruptions.length})</h2>
+            <div className="space-y-2">
+              {interruptions.map((interruption) => (
+                <div key={interruption.id} className="text-sm p-3 bg-slate-50 rounded flex items-start gap-3">
+                  <span className="text-xs font-semibold text-teal-700 uppercase">
+                    {interruption.category}
+                  </span>
+                  <span className="text-slate-600 flex-1">
+                    {interruption.note || "No note added"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        <div className="flex flex-wrap gap-3">
+          <Button
+            onClick={() => setShowInterruptionDialog(true)}
+            variant="outline"
+            className="w-full sm:flex-1 gap-2"
+          >
+            <AlertCircle className="w-4 h-4" />
+            Log interruption
+          </Button>
+          <Button
+            onClick={handleCopyInviteLink}
+            variant="outline"
+            className="w-full sm:flex-1 gap-2"
+          >
+            {inviteCopied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+            {inviteCopied ? "Copied" : "Copy invite link"}
+          </Button>
           <Button
             onClick={() => setLocation("/group-sessions")}
             variant="outline"
-            className="flex-1"
+            className="w-full sm:flex-1"
           >
             Back to Sessions
           </Button>
           {status === "in-progress" && (
             <Button
               onClick={() => setLocation("/")}
-              className="flex-1"
+              className="w-full sm:flex-1"
             >
               Go to Dashboard
             </Button>
           )}
         </div>
+
+        <Dialog open={showInterruptionDialog} onOpenChange={setShowInterruptionDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Log an interruption</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="group-interruption-category">Category</Label>
+                <select
+                  id="group-interruption-category"
+                  value={interruptionForm.category}
+                  onChange={(event) =>
+                    setInterruptionForm({ ...interruptionForm, category: event.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
+                >
+                  <option value="phone">Phone</option>
+                  <option value="email">Email</option>
+                  <option value="social">Social Media</option>
+                  <option value="thoughts">Wandering Thoughts</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="group-interruption-note">Note</Label>
+                <Input
+                  id="group-interruption-note"
+                  value={interruptionForm.note}
+                  onChange={(event) =>
+                    setInterruptionForm({ ...interruptionForm, note: event.target.value })
+                  }
+                  placeholder="What interrupted you?"
+                />
+              </div>
+              <Button onClick={handleAddInterruption} className="w-full gap-2">
+                <AlertCircle className="w-4 h-4" />
+                Log interruption
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
