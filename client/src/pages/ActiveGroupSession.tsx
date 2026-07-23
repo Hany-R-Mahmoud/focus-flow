@@ -2,16 +2,69 @@ import { useEffect, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { getGroupSession, initDB } from "@/lib/db";
-import { calculateSessionStatus, calculateTimeRemaining, generateGroupSessionLink } from "@/lib/groupSession";
+import {
+  calculateSessionStatus,
+  calculateTimeRemaining,
+  generateGroupSessionLink,
+} from "@/lib/groupSession";
 import type { Distraction, GroupSession } from "@/lib/db";
-import { getSessionParticipants, type Participant } from "@/lib/participants";
-import { AlertCircle, Copy, Check, ExternalLink, Share2 } from "lucide-react";
+import {
+  getSessionParticipants,
+  removeParticipantByName,
+  type Participant,
+} from "@/lib/participants";
+import { getStoredDisplayName, isSupabaseConfigured } from "@/lib/supabase";
+import {
+  claimActiveGroupSession,
+  refreshActiveGroupSession,
+  releaseActiveGroupSession,
+} from "@/lib/activeGroupSession";
+import { subscribeToCloudGroupPresence } from "@/lib/cloudGroupSessions";
+import {
+  getActivityLog,
+  readGroupSessionLocalJson,
+  readGroupSessionLocalText,
+  writeGroupSessionLocalJson,
+  writeGroupSessionLocalText,
+} from "@/lib/activityLog";
+import ActivityTimeline from "@/components/ActivityTimeline";
+import {
+  AlertCircle,
+  Check,
+  Copy,
+  ExternalLink,
+  LogOut,
+  Share2,
+} from "lucide-react";
+
+type GroupSessionStatus = ReturnType<typeof calculateSessionStatus>;
+
+function isDistraction(value: unknown): value is Distraction {
+  if (!value || typeof value !== "object") return false;
+  const distraction = value as Record<string, unknown>;
+  return (
+    typeof distraction.id === "string" &&
+    typeof distraction.sessionId === "string" &&
+    typeof distraction.time === "number" &&
+    typeof distraction.category === "string" &&
+    typeof distraction.note === "string"
+  );
+}
+
+function isDistractionList(value: unknown): value is Distraction[] {
+  return Array.isArray(value) && value.every(isDistraction);
+}
 
 export default function ActiveGroupSession() {
   const [, setLocation] = useLocation();
@@ -19,12 +72,19 @@ export default function ActiveGroupSession() {
   const sessionId = params?.id;
 
   const [session, setSession] = useState<GroupSession | null>(null);
-  const [status, setStatus] = useState<string>("loading");
+  const [status, setStatus] = useState<GroupSessionStatus | "loading">(
+    "loading"
+  );
   const [timeRemaining, setTimeRemaining] = useState(0);
+  const [intention, setIntention] = useState("");
   const [outcome, setOutcome] = useState("");
   const [reflection, setReflection] = useState("");
   const [interruptions, setInterruptions] = useState<Distraction[]>([]);
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [cloudPresenceActive, setCloudPresenceActive] = useState(false);
+  const [activityEvents, setActivityEvents] = useState<
+    ReturnType<typeof getActivityLog>
+  >([]);
   const [interruptionForm, setInterruptionForm] = useState({
     category: "other",
     note: "",
@@ -35,11 +95,85 @@ export default function ActiveGroupSession() {
   const [copied, setCopied] = useState(false);
   const [inviteCopied, setInviteCopied] = useState(false);
 
-  const getInterruptionStorageKey = (id: string) => `focusflow_group_interruptions_${id}`;
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadSession = async () => {
+      if (!sessionId) {
+        setError("Invalid session ID");
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+      setSession(null);
+      try {
+        await initDB();
+        const loaded = await getGroupSession(sessionId);
+        if (!loaded) {
+          if (!cancelled) setError("Session not found");
+          return;
+        }
+
+        const storedInterruptions = readGroupSessionLocalJson(
+          "interruptions",
+          loaded.id,
+          [],
+          isDistractionList
+        );
+        const storedIntention = readGroupSessionLocalText(
+          "intention",
+          loaded.id
+        );
+        const storedOutcome =
+          loaded.outcome || readGroupSessionLocalText("outcome", loaded.id);
+        const storedReflection =
+          loaded.reflection ||
+          readGroupSessionLocalText("reflection", loaded.id);
+
+        if (!cancelled) {
+          setSession(loaded);
+          setIntention(storedIntention);
+          setOutcome(storedOutcome);
+          setReflection(storedReflection);
+          setInterruptions(storedInterruptions);
+          setParticipants(getSessionParticipants(loaded.id));
+          setActivityEvents(getActivityLog(loaded.id));
+        }
+      } catch (err) {
+        console.error("Error loading session:", err);
+        if (!cancelled) setError("Failed to load session");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    void loadSession();
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId]);
 
   useEffect(() => {
-    loadSession();
-  }, [sessionId]);
+    if (!session) return;
+
+    const activeSessionKey = session.payloadSessionId || session.id;
+    if (!claimActiveGroupSession(activeSessionKey)) {
+      setError("You already have another group session open.");
+      setSession(null);
+      return;
+    }
+
+    const heartbeat = window.setInterval(() => {
+      refreshActiveGroupSession(activeSessionKey);
+    }, 15_000);
+
+    return () => {
+      window.clearInterval(heartbeat);
+      releaseActiveGroupSession(activeSessionKey);
+    };
+  }, [session]);
 
   useEffect(() => {
     if (!session) return;
@@ -52,8 +186,13 @@ export default function ActiveGroupSession() {
       );
       setStatus(newStatus);
 
-      const remaining = calculateTimeRemaining(session.startsAt, session.focusMinutes);
-      setTimeRemaining(remaining);
+      setTimeRemaining(
+        calculateTimeRemaining(
+          session.startsAt,
+          session.focusMinutes,
+          session.breakMinutes || 0
+        )
+      );
     };
 
     updateStatus();
@@ -61,37 +200,66 @@ export default function ActiveGroupSession() {
     return () => clearInterval(interval);
   }, [session]);
 
-  const loadSession = async () => {
-    if (!sessionId) {
-      setError("Invalid session ID");
-      setLoading(false);
-      return;
-    }
+  useEffect(() => {
+    const payloadSessionId = session?.payloadSessionId;
+    if (!session || !payloadSessionId) return;
 
-    try {
-      // Initialize database first
-      await initDB();
-      const loaded = await getGroupSession(sessionId);
-      if (!loaded) {
-        setError("Session not found");
-        setLoading(false);
-        return;
-      }
-      setSession(loaded);
+    let cancelled = false;
+    let cleanup: (() => void) | null = null;
+    setCloudPresenceActive(false);
+
+    const connectPresence = async () => {
       try {
-        const storedInterruptions = localStorage.getItem(getInterruptionStorageKey(loaded.id));
-        setInterruptions(storedInterruptions ? JSON.parse(storedInterruptions) : []);
-      } catch {
-        setInterruptions([]);
+        const cloudCleanup = await subscribeToCloudGroupPresence(
+          payloadSessionId,
+          getStoredDisplayName(),
+          nextParticipants => {
+            if (!cancelled) setParticipants(nextParticipants);
+          },
+          participantName => {
+            if (!cancelled) toast.info(`${participantName} left the session`);
+          }
+        );
+        if (cancelled) {
+          cloudCleanup?.();
+        } else {
+          cleanup = cloudCleanup;
+          setCloudPresenceActive(cloudCleanup !== null);
+        }
+      } catch (error) {
+        setCloudPresenceActive(false);
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        console.warn(
+          `Cloud presence unavailable; using local participants. ${message}`
+        );
       }
-      setParticipants(getSessionParticipants(loaded.id));
-    } catch (err) {
-      console.error("Error loading session:", err);
-      setError("Failed to load session");
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    void connectPresence();
+    return () => {
+      cancelled = true;
+      setCloudPresenceActive(false);
+      cleanup?.();
+    };
+  }, [session]);
+
+  useEffect(() => {
+    if (!session) return;
+
+    const refreshLocalData = () => {
+      if (
+        !cloudPresenceActive &&
+        !(isSupabaseConfigured && session.payloadSessionId)
+      ) {
+        setParticipants(getSessionParticipants(session.id));
+      }
+      setActivityEvents(getActivityLog(session.id));
+    };
+    refreshLocalData();
+    const interval = window.setInterval(refreshLocalData, 1000);
+    return () => window.clearInterval(interval);
+  }, [cloudPresenceActive, session]);
 
   const formatTime = (ms: number): string => {
     const totalSeconds = Math.floor(ms / 1000);
@@ -113,6 +281,8 @@ export default function ActiveGroupSession() {
         return "bg-yellow-50 border-yellow-200";
       case "in-progress":
         return "bg-green-50 border-green-200";
+      case "break":
+        return "bg-amber-50 border-amber-200";
       case "ended":
         return "bg-slate-50 border-slate-200";
       default:
@@ -125,18 +295,14 @@ export default function ActiveGroupSession() {
 
     let summary = "Focus session completed\n";
     summary += `Session: ${session.title}\n`;
-    if (outcome) {
-      summary += `Intention: ${outcome}\n`;
-    }
+    if (intention) summary += `Intention: ${intention}\n`;
     summary += `Focused: ${session.focusMinutes} minutes\n`;
-    if (outcome) {
-      summary += `Outcome: ${outcome}\n`;
-    }
+    if (outcome) summary += `Outcome: ${outcome}\n`;
     if (interruptions.length > 0) {
       summary += `Interruptions recorded: ${interruptions.length}\n`;
     }
     if (reflection) {
-      summary += `Reflection: ${reflection}`;
+      summary += `Reflection: ${reflection}\n`;
     }
 
     return summary;
@@ -166,7 +332,7 @@ export default function ActiveGroupSession() {
 
     const nextInterruptions = [...interruptions, interruption];
     setInterruptions(nextInterruptions);
-    localStorage.setItem(getInterruptionStorageKey(session.id), JSON.stringify(nextInterruptions));
+    writeGroupSessionLocalJson("interruptions", session.id, nextInterruptions);
     setInterruptionForm({ category: "other", note: "" });
     setShowInterruptionDialog(false);
     toast.success("Interruption logged");
@@ -175,18 +341,23 @@ export default function ActiveGroupSession() {
   const getInviteLink = (): string => {
     if (!session) return "";
 
-    return generateGroupSessionLink({
-      version: session.payloadVersion,
-      sessionId: session.id.startsWith("gs_") ? session.id : `gs_${session.id}`,
-      title: session.title,
-      sharedObjective: session.sharedObjective,
-      startsAt: session.startsAt,
-      focusMinutes: session.focusMinutes,
-      breakMinutes: session.breakMinutes,
-      meetingUrl: session.meetingUrl,
-      organizerName: session.organizerName,
-      openingMessage: session.openingMessage,
-    });
+    return generateGroupSessionLink(
+      {
+        version: session.payloadVersion,
+        sessionId:
+          session.payloadSessionId ||
+          (session.id.startsWith("gs_") ? session.id : `gs_${session.id}`),
+        title: session.title,
+        sharedObjective: session.sharedObjective,
+        startsAt: session.startsAt,
+        focusMinutes: session.focusMinutes,
+        breakMinutes: session.breakMinutes,
+        meetingUrl: session.meetingUrl,
+        organizerName: session.organizerName,
+        openingMessage: session.openingMessage,
+      },
+      { allowStarted: true }
+    );
   };
 
   const handleCopyInviteLink = async () => {
@@ -198,6 +369,14 @@ export default function ActiveGroupSession() {
     } catch {
       toast.error("Failed to copy invite link");
     }
+  };
+
+  const handleExitSession = (destination = "/group-sessions") => {
+    if (!session) return;
+    removeParticipantByName(session.id, getStoredDisplayName());
+    releaseActiveGroupSession(session.payloadSessionId || session.id);
+    toast.success("You left the session");
+    setLocation(destination);
   };
 
   if (loading) {
@@ -219,7 +398,10 @@ export default function ActiveGroupSession() {
             <h2 className="text-lg font-semibold text-red-900">Error</h2>
           </div>
           <p className="text-red-700 mb-6">{error}</p>
-          <Button onClick={() => setLocation("/group-sessions")} className="w-full">
+          <Button
+            onClick={() => setLocation("/group-sessions")}
+            className="w-full"
+          >
             Back to Group Sessions
           </Button>
         </Card>
@@ -228,7 +410,10 @@ export default function ActiveGroupSession() {
   }
 
   const startTime = new Date(session.startsAt);
-  const endTime = new Date(startTime.getTime() + session.focusMinutes * 60 * 1000);
+  const endTime = new Date(
+    startTime.getTime() +
+      (session.focusMinutes + (session.breakMinutes || 0)) * 60 * 1000
+  );
   const isEnded = status === "ended";
 
   if (isEnded) {
@@ -236,13 +421,19 @@ export default function ActiveGroupSession() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4">
         <div className="max-w-2xl mx-auto">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-slate-900">Session Complete</h1>
-            <p className="text-slate-600 mt-2">Great work! Record your outcome below.</p>
+            <h1 className="text-3xl font-bold text-slate-900">
+              Session Complete
+            </h1>
+            <p className="text-slate-600 mt-2">
+              Great work! Record your outcome below.
+            </p>
           </div>
 
           <Card className="p-6 mb-6">
             <div className="mb-6">
-              <h2 className="text-lg font-semibold text-slate-900 mb-4">Session Summary</h2>
+              <h2 className="text-lg font-semibold text-slate-900 mb-4">
+                Session Summary
+              </h2>
               <div className="space-y-2 text-sm">
                 <p>
                   <span className="font-medium text-slate-700">Session:</span>{" "}
@@ -250,24 +441,64 @@ export default function ActiveGroupSession() {
                 </p>
                 <p>
                   <span className="font-medium text-slate-700">Duration:</span>{" "}
-                  <span className="text-slate-600">{session.focusMinutes} minutes</span>
+                  <span className="text-slate-600">
+                    {session.focusMinutes} minutes
+                  </span>
                 </p>
                 <p>
-                  <span className="font-medium text-slate-700">Completed at:</span>{" "}
-                  <span className="text-slate-600">{endTime.toLocaleString()}</span>
+                  <span className="font-medium text-slate-700">
+                    Completed at:
+                  </span>{" "}
+                  <span className="text-slate-600">
+                    {endTime.toLocaleString()}
+                  </span>
                 </p>
               </div>
             </div>
 
             <div className="border-t pt-6 space-y-4">
               <div>
-                <Label htmlFor="outcome" className="text-sm font-medium text-slate-700">
+                <Label
+                  htmlFor="group-intention"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  What is your intention for this session?
+                </Label>
+                <Textarea
+                  id="group-intention"
+                  value={intention}
+                  onChange={event => {
+                    setIntention(event.target.value);
+                    writeGroupSessionLocalText(
+                      "intention",
+                      session.id,
+                      event.target.value
+                    );
+                  }}
+                  placeholder="What will you focus on?"
+                  className="mt-2 resize-none"
+                  rows={2}
+                />
+              </div>
+
+              <div>
+                <Label
+                  htmlFor="outcome"
+                  className="text-sm font-medium text-slate-700"
+                >
                   What did you accomplish?
                 </Label>
                 <Textarea
                   id="outcome"
                   value={outcome}
-                  onChange={(e) => setOutcome(e.target.value)}
+                  onChange={event => {
+                    setOutcome(event.target.value);
+                    writeGroupSessionLocalText(
+                      "outcome",
+                      session.id,
+                      event.target.value
+                    );
+                  }}
                   placeholder="Describe what you completed or achieved..."
                   className="mt-2 resize-none"
                   rows={3}
@@ -275,13 +506,23 @@ export default function ActiveGroupSession() {
               </div>
 
               <div>
-                <Label htmlFor="reflection" className="text-sm font-medium text-slate-700">
+                <Label
+                  htmlFor="reflection"
+                  className="text-sm font-medium text-slate-700"
+                >
                   Reflection (optional)
                 </Label>
                 <Textarea
                   id="reflection"
                   value={reflection}
-                  onChange={(e) => setReflection(e.target.value)}
+                  onChange={event => {
+                    setReflection(event.target.value);
+                    writeGroupSessionLocalText(
+                      "reflection",
+                      session.id,
+                      event.target.value
+                    );
+                  }}
                   placeholder="Any thoughts about the session?"
                   className="mt-2 resize-none"
                   rows={3}
@@ -289,17 +530,26 @@ export default function ActiveGroupSession() {
               </div>
 
               <div>
-                <p className="text-sm font-medium text-slate-700">Interruptions recorded</p>
-                <p className="mt-2 text-sm text-slate-600">{interruptions.length}</p>
+                <p className="text-sm font-medium text-slate-700">
+                  Interruptions recorded
+                </p>
+                <p className="mt-2 text-sm text-slate-600">
+                  {interruptions.length}
+                </p>
               </div>
             </div>
 
             {interruptions.length > 0 && (
               <div className="border-t pt-6 mt-6">
-                <h3 className="font-semibold text-slate-900 mb-3">Your interruptions</h3>
+                <h3 className="font-semibold text-slate-900 mb-3">
+                  Your interruptions
+                </h3>
                 <div className="space-y-2">
-                  {interruptions.map((interruption) => (
-                    <div key={interruption.id} className="text-sm p-3 bg-slate-50 rounded flex items-start gap-3">
+                  {interruptions.map(interruption => (
+                    <div
+                      key={interruption.id}
+                      className="text-sm p-3 bg-slate-50 rounded flex items-start gap-3"
+                    >
                       <span className="text-xs font-semibold text-teal-700 uppercase">
                         {interruption.category}
                       </span>
@@ -313,10 +563,13 @@ export default function ActiveGroupSession() {
             )}
 
             <div className="border-t pt-6 mt-6">
-              <h3 className="font-semibold text-slate-900 mb-3">Completion Summary</h3>
+              <h3 className="font-semibold text-slate-900 mb-3">
+                Completion Summary
+              </h3>
               <textarea
                 value={generateCompletionSummary()}
                 readOnly
+                aria-label="Completion summary"
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50 text-sm text-slate-600 font-mono h-32 resize-none"
               />
               <Button
@@ -325,7 +578,11 @@ export default function ActiveGroupSession() {
                 size="sm"
                 className="mt-2 gap-2"
               >
-                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {copied ? (
+                  <Check className="w-4 h-4" />
+                ) : (
+                  <Copy className="w-4 h-4" />
+                )}
                 {copied ? "Copied" : "Copy Summary"}
               </Button>
             </div>
@@ -339,10 +596,7 @@ export default function ActiveGroupSession() {
             >
               Back to Group Sessions
             </Button>
-            <Button
-              onClick={() => setLocation("/")}
-              className="flex-1"
-            >
+            <Button onClick={() => setLocation("/")} className="flex-1">
               Return to Dashboard
             </Button>
           </div>
@@ -363,7 +617,10 @@ export default function ActiveGroupSession() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <p className="text-sm text-slate-600">Time Remaining</p>
-              <p className="text-4xl font-bold text-slate-900 font-mono">
+              <p
+                className="text-4xl font-bold text-slate-900 font-mono"
+                aria-live="polite"
+              >
                 {formatTime(timeRemaining)}
               </p>
             </div>
@@ -378,7 +635,9 @@ export default function ActiveGroupSession() {
           <div className="space-y-2 text-sm border-t pt-4">
             <p>
               <span className="font-medium text-slate-700">Start:</span>{" "}
-              <span className="text-slate-600">{startTime.toLocaleString()}</span>
+              <span className="text-slate-600">
+                {startTime.toLocaleString()}
+              </span>
             </p>
             <p>
               <span className="font-medium text-slate-700">End:</span>{" "}
@@ -386,7 +645,9 @@ export default function ActiveGroupSession() {
             </p>
             {session.organizerName && (
               <p>
-                <span className="font-medium text-slate-700">Organized by:</span>{" "}
+                <span className="font-medium text-slate-700">
+                  Organized by:
+                </span>{" "}
                 <span className="text-slate-600">{session.organizerName}</span>
               </p>
             )}
@@ -409,46 +670,101 @@ export default function ActiveGroupSession() {
 
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
           <p className="text-sm text-blue-900">
-            <strong>Group Session:</strong> This session runs on your device based on the scheduled
-            start and end times. Your personal intentions, distractions, and outcomes stay private
-            unless you manually share them.
+            <strong>Group Session:</strong> This session runs on your device
+            based on the scheduled start and end times. Your personal
+            intentions, distractions, and outcomes stay private unless you
+            manually share them.
           </p>
         </div>
 
         <Card className="p-6 mb-6">
+          <h2 className="font-semibold text-slate-900 mb-3">Your intention</h2>
+          <Label htmlFor="group-intention-active" className="sr-only">
+            What will you focus on?
+          </Label>
+          <Textarea
+            id="group-intention-active"
+            value={intention}
+            onChange={event => {
+              setIntention(event.target.value);
+              writeGroupSessionLocalText(
+                "intention",
+                session.id,
+                event.target.value
+              );
+            }}
+            placeholder="What will you focus on?"
+            rows={2}
+            className="resize-none"
+          />
+          <p className="text-xs text-slate-500 mt-2">
+            Stored only on this browser.
+          </p>
+        </Card>
+
+        <Card className="p-6 mb-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 className="font-semibold text-slate-900">Participants on this browser</h2>
+              <h2 className="font-semibold text-slate-900">
+                {cloudPresenceActive
+                  ? "Participants online"
+                  : "Participants on this browser"}
+              </h2>
               <p className="text-sm text-slate-600 mt-1">
-                {participants.length === 0
-                  ? "No participants recorded here yet."
-                  : `${participants.length} ${participants.length === 1 ? "person" : "people"} joined here.`}
+                {cloudPresenceActive
+                  ? participants.length === 0
+                    ? "No one is connected yet."
+                    : `${participants.length} ${participants.length === 1 ? "person is" : "people are"} connected.`
+                  : participants.length === 0
+                    ? "No participants recorded here yet."
+                    : `${participants.length} ${participants.length === 1 ? "person" : "people"} joined here.`}
               </p>
             </div>
-            <span className="text-2xl font-semibold text-teal-700" aria-label={`${participants.length} local participants`}>
+            <span
+              className="text-2xl font-semibold text-teal-700"
+              aria-label={`${participants.length} ${cloudPresenceActive ? "online" : "local"} participants`}
+            >
               {participants.length}
             </span>
           </div>
           {participants.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-4" aria-label="Local participant names">
-              {participants.map((participant) => (
-                <span key={participant.id} className="px-3 py-1 rounded-full bg-teal-50 text-teal-800 text-sm">
+            <div
+              className="flex flex-wrap gap-2 mt-4"
+              aria-label="Local participant names"
+            >
+              {participants.map(participant => (
+                <span
+                  key={participant.id}
+                  className="px-3 py-1 rounded-full bg-teal-50 text-teal-800 text-sm"
+                >
                   {participant.name}
                 </span>
               ))}
             </div>
           )}
           <p className="text-xs text-slate-500 mt-4">
-            This roster is local to this browser; live cross-device presence is not enabled.
+            {cloudPresenceActive
+              ? "Live names disappear when participants leave."
+              : "This roster is local to this browser; live cross-device presence is not enabled."}
           </p>
+        </Card>
+
+        <Card className="p-6 mb-6">
+          <h2 className="font-semibold text-slate-900 mb-3">Activity</h2>
+          <ActivityTimeline events={activityEvents} />
         </Card>
 
         {interruptions.length > 0 && (
           <Card className="p-6 mb-6">
-            <h2 className="font-semibold text-slate-900 mb-3">Your interruptions ({interruptions.length})</h2>
+            <h2 className="font-semibold text-slate-900 mb-3">
+              Your interruptions ({interruptions.length})
+            </h2>
             <div className="space-y-2">
-              {interruptions.map((interruption) => (
-                <div key={interruption.id} className="text-sm p-3 bg-slate-50 rounded flex items-start gap-3">
+              {interruptions.map(interruption => (
+                <div
+                  key={interruption.id}
+                  className="text-sm p-3 bg-slate-50 rounded flex items-start gap-3"
+                >
                   <span className="text-xs font-semibold text-teal-700 uppercase">
                     {interruption.category}
                   </span>
@@ -475,11 +791,15 @@ export default function ActiveGroupSession() {
             variant="outline"
             className="w-full sm:flex-1 gap-2"
           >
-            {inviteCopied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+            {inviteCopied ? (
+              <Check className="w-4 h-4" />
+            ) : (
+              <Share2 className="w-4 h-4" />
+            )}
             {inviteCopied ? "Copied" : "Copy invite link"}
           </Button>
           <Button
-            onClick={() => setLocation("/group-sessions")}
+            onClick={() => handleExitSession()}
             variant="outline"
             className="w-full sm:flex-1"
           >
@@ -487,15 +807,26 @@ export default function ActiveGroupSession() {
           </Button>
           {status === "in-progress" && (
             <Button
-              onClick={() => setLocation("/")}
+              onClick={() => handleExitSession("/")}
               className="w-full sm:flex-1"
             >
               Go to Dashboard
             </Button>
           )}
+          <Button
+            onClick={() => handleExitSession()}
+            variant="destructive"
+            className="w-full sm:flex-1 gap-2"
+          >
+            <LogOut className="w-4 h-4" />
+            Exit Session
+          </Button>
         </div>
 
-        <Dialog open={showInterruptionDialog} onOpenChange={setShowInterruptionDialog}>
+        <Dialog
+          open={showInterruptionDialog}
+          onOpenChange={setShowInterruptionDialog}
+        >
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Log an interruption</DialogTitle>
@@ -506,8 +837,11 @@ export default function ActiveGroupSession() {
                 <select
                   id="group-interruption-category"
                   value={interruptionForm.category}
-                  onChange={(event) =>
-                    setInterruptionForm({ ...interruptionForm, category: event.target.value })
+                  onChange={event =>
+                    setInterruptionForm({
+                      ...interruptionForm,
+                      category: event.target.value,
+                    })
                   }
                   className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
                 >
@@ -523,8 +857,11 @@ export default function ActiveGroupSession() {
                 <Input
                   id="group-interruption-note"
                   value={interruptionForm.note}
-                  onChange={(event) =>
-                    setInterruptionForm({ ...interruptionForm, note: event.target.value })
+                  onChange={event =>
+                    setInterruptionForm({
+                      ...interruptionForm,
+                      note: event.target.value,
+                    })
                   }
                   placeholder="What interrupted you?"
                 />

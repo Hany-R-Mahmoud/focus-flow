@@ -56,11 +56,17 @@ export function formatDateTime(timestamp: number): string {
 
 export function getDateString(timestamp: number): string {
   const date = new Date(timestamp);
-  return date.toISOString().split("T")[0];
+  return formatLocalDate(date);
 }
 
 export function getTodayString(): string {
-  return new Date().toISOString().split("T")[0];
+  return formatLocalDate(new Date());
+}
+
+export function getLocalDayStart(timestamp: number = Date.now()): number {
+  const date = new Date(timestamp);
+  date.setHours(0, 0, 0, 0);
+  return date.getTime();
 }
 
 export function getWeekStartDate(date: Date = new Date()): Date {
@@ -76,9 +82,31 @@ export function getWeekDates(date: Date = new Date()): string[] {
   for (let i = 0; i < 7; i++) {
     const d = new Date(start);
     d.setDate(d.getDate() + i);
-    dates.push(d.toISOString().split("T")[0]);
+    dates.push(formatLocalDate(d));
   }
   return dates;
+}
+
+function formatLocalDate(date: Date): string {
+  return [date.getFullYear(), date.getMonth() + 1, date.getDate()]
+    .map((part, index) =>
+      index === 0 ? String(part) : String(part).padStart(2, "0")
+    )
+    .join("-");
+}
+
+export function getElapsedSessionTime(
+  startTime: number,
+  pausedTime: number,
+  status: "active" | "paused" | "completed" | "abandoned",
+  endTime: number | null = null,
+  pausedAt: number | null = null,
+  now: number = Date.now()
+): number {
+  const effectiveEnd = endTime ?? now;
+  const currentPause =
+    status === "paused" && pausedAt ? Math.max(0, now - pausedAt) : 0;
+  return Math.max(0, effectiveEnd - startTime - pausedTime - currentPause);
 }
 
 export function calculateSessionDuration(

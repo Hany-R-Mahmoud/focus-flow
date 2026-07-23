@@ -13,7 +13,7 @@ import DailyReview from "./pages/DailyReview";
 import WeeklyReview from "./pages/WeeklyReview";
 import Settings from "./pages/Settings";
 import Sidebar from "./components/Sidebar";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import CreateGroupSession from "./pages/CreateGroupSession";
 import GroupSessionPreview from "./pages/GroupSessionPreview";
@@ -21,6 +21,7 @@ import GroupSessions from "./pages/GroupSessions";
 import ActiveGroupSession from "./pages/ActiveGroupSession";
 import { useSessionReminders } from "@/hooks/useSessionReminders";
 import { seedDatabase, initDB } from "@/lib/db";
+import { ensureAnonymousUser } from "@/lib/supabase";
 
 function Router() {
   return (
@@ -61,10 +62,48 @@ function AppContent() {
 }
 
 function App() {
+  const [isReady, setIsReady] = useState(false);
+  const [startupError, setStartupError] = useState<string | null>(null);
+
   useEffect(() => {
-    // Seed database with sample data if needed
-    initDB().then(() => seedDatabase()).catch(console.error);
+    let cancelled = false;
+    void ensureAnonymousUser().catch(error => {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      console.warn(
+        `Supabase anonymous auth unavailable; using local mode. ${message}`
+      );
+    });
+
+    initDB()
+      .then(() => seedDatabase())
+      .then(() => {
+        if (!cancelled) setIsReady(true);
+      })
+      .catch(error => {
+        console.error("Failed to initialize local data", error);
+        if (!cancelled) setStartupError("Local data could not be initialized.");
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  if (startupError) {
+    return (
+      <div className="min-h-screen p-8 text-center text-destructive">
+        {startupError}
+      </div>
+    );
+  }
+
+  if (!isReady) {
+    return (
+      <div className="min-h-screen p-8 text-center text-muted-foreground">
+        Preparing your focus space…
+      </div>
+    );
+  }
 
   return (
     <ErrorBoundary>

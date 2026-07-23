@@ -3,13 +3,34 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { getGroupSessions, deleteGroupSession, createTemplate, initDB } from "@/lib/db";
+import {
+  getGroupSessions,
+  deleteGroupSession,
+  createTemplate,
+  initDB,
+} from "@/lib/db";
 import { GroupSession } from "@/lib/db";
-import { calculateSessionStatus, calculateTimeUntilStart } from "@/lib/groupSession";
+import {
+  calculateSessionStatus,
+  calculateTimeRemaining,
+  calculateTimeUntilStart,
+} from "@/lib/groupSession";
 import { formatTime } from "@/lib/time";
 import { getSessionParticipants, addParticipant } from "@/lib/participants";
+import { isSupabaseConfigured, saveDisplayName } from "@/lib/supabase";
+import { joinCloudGroupSession } from "@/lib/cloudGroupSessions";
+import {
+  claimActiveGroupSession,
+  releaseActiveGroupSession,
+} from "@/lib/activeGroupSession";
 import ParticipantAvatars from "@/components/ParticipantAvatars";
 import ParticipantBadge from "@/components/ParticipantBadge";
 import { Play, Trash2, Save, Users, Plus } from "lucide-react";
@@ -18,37 +39,51 @@ export default function GroupSessions() {
   const [, setLocation] = useLocation();
   const [sessions, setSessions] = useState<GroupSession[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedSession, setSelectedSession] = useState<GroupSession | null>(null);
+  const [selectedSession, setSelectedSession] = useState<GroupSession | null>(
+    null
+  );
   const [joinSession, setJoinSession] = useState<GroupSession | null>(null);
   const [participantName, setParticipantName] = useState("");
   const [templateName, setTemplateName] = useState("");
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    loadSessions();
+    let cancelled = false;
+
+    const refreshSessions = async () => {
+      try {
+        await initDB();
+        const data = await getGroupSessions();
+        if (!cancelled) setSessions(data);
+      } catch (err) {
+        console.error("Error loading sessions:", err);
+        if (!cancelled) toast.error("Failed to load sessions");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    void refreshSessions();
+    window.addEventListener("focus", refreshSessions);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", refreshSessions);
+    };
   }, []);
 
-  const loadSessions = async () => {
-    try {
-      // Initialize database if not already done
-      await initDB();
-      const data = await getGroupSessions();
-      setSessions(data);
-    } catch (err) {
-      console.error("Error loading sessions:", err);
-      toast.error("Failed to load sessions");
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   const handleDeleteSession = async (id: string) => {
     if (!confirm("Delete this session?")) return;
 
     try {
       await deleteGroupSession(id);
-      setSessions(sessions.filter((s) => s.id !== id));
+      setSessions(current => current.filter(s => s.id !== id));
       toast.success("Session deleted");
     } catch (err) {
       toast.error("Failed to delete session");
@@ -85,14 +120,32 @@ export default function GroupSessions() {
     setShowJoinDialog(true);
   };
 
-  const confirmJoinSession = () => {
+  const confirmJoinSession = async () => {
     if (!joinSession) return;
 
-    addParticipant(joinSession.id, participantName || "Anonymous");
-    toast.success("You've joined the session!");
-    setShowJoinDialog(false);
-    setJoinSession(null);
-    setLocation(`/active-group/${joinSession.id}`);
+    const activeSessionKey = joinSession.payloadSessionId || joinSession.id;
+    if (!claimActiveGroupSession(activeSessionKey)) {
+      toast.error("You already have another group session open.");
+      return;
+    }
+
+    try {
+      const name = participantName.trim() || "Anonymous";
+      if (isSupabaseConfigured && joinSession.payloadSessionId) {
+        await joinCloudGroupSession(joinSession.payloadSessionId, name);
+      }
+      await saveDisplayName(name);
+      addParticipant(joinSession.id, name);
+      toast.success("You've joined the session!");
+      setShowJoinDialog(false);
+      setJoinSession(null);
+      setLocation(`/active-group/${joinSession.id}`);
+    } catch (error) {
+      releaseActiveGroupSession(activeSessionKey);
+      const message = error instanceof Error ? error.message : "Unknown error";
+      console.error(`Error joining session. ${message}`);
+      toast.error("Failed to join session");
+    }
   };
 
   if (loading) {
@@ -106,7 +159,8 @@ export default function GroupSessions() {
           <Users size={48} className="mx-auto text-muted-foreground" />
           <h1 className="text-2xl font-bold">No group sessions yet</h1>
           <p className="text-muted-foreground">
-            Create a group session to coordinate focus time with others, or join one using a shared link.
+            Create a group session to coordinate focus time with others, or join
+            one using a shared link.
           </p>
           <Button
             onClick={() => setLocation("/create-group-session")}
@@ -123,12 +177,16 @@ export default function GroupSessions() {
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Group Sessions</h1>
-        <p className="text-muted-foreground">Coordinated focus sessions with others</p>
+        <h1 className="text-3xl font-bold text-foreground mb-2">
+          Group Sessions
+        </h1>
+        <p className="text-muted-foreground">
+          Coordinated focus sessions with others
+        </p>
       </div>
 
       <div className="space-y-4">
-        {sessions.map((session) => {
+        {sessions.map(session => {
           const status = calculateSessionStatus(
             session.startsAt,
             session.focusMinutes,
@@ -142,20 +200,34 @@ export default function GroupSessions() {
             displayText = `Starting in ${formatTime(timeUntil)}`;
           } else if (status === "starting-soon") {
             displayText = "Starting very soon!";
+          } else if (status === "in-progress") {
+            displayText = `Focus ends in ${formatTime(calculateTimeRemaining(session.startsAt, session.focusMinutes))}`;
+          } else if (status === "break") {
+            const breakEnd =
+              new Date(session.startsAt).getTime() +
+              (session.focusMinutes + (session.breakMinutes || 0)) * 60 * 1000;
+            displayText = `Break ends in ${formatTime(Math.max(0, breakEnd - now))}`;
           }
 
           return (
-            <Card key={session.id} className="p-6 hover:shadow-lg transition-shadow">
+            <Card
+              key={session.id}
+              className="p-6 hover:shadow-lg transition-shadow"
+            >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-foreground">{session.title}</h3>
+                  <h3 className="text-lg font-semibold text-foreground">
+                    {session.title}
+                  </h3>
                   {session.sharedObjective && (
-                    <p className="text-sm text-muted-foreground mt-1">{session.sharedObjective}</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {session.sharedObjective}
+                    </p>
                   )}
                 </div>
                 <div className="text-right flex flex-col gap-2 items-end">
                   <p className="text-xs font-semibold px-2 py-1 rounded bg-blue-100 text-blue-800">
-                    {displayText}
+                    <span aria-live="polite">{displayText}</span>
                   </p>
                   {participants.length > 0 && (
                     <ParticipantBadge count={participants.length} />
@@ -166,12 +238,17 @@ export default function GroupSessions() {
               <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
                 <div>
                   <p className="text-muted-foreground">Start Time</p>
-                  <p className="font-medium">{new Date(session.startsAt).toLocaleString()}</p>
+                  <p className="font-medium">
+                    {new Date(session.startsAt).toLocaleString()}
+                  </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Duration</p>
                   <p className="font-medium">
-                    {session.focusMinutes}m{session.breakMinutes ? ` + ${session.breakMinutes}m break` : ""}
+                    {session.focusMinutes}m
+                    {session.breakMinutes
+                      ? ` + ${session.breakMinutes}m break`
+                      : ""}
                   </p>
                 </div>
               </div>
@@ -201,7 +278,12 @@ export default function GroupSessions() {
                   </Button>
                 )}
 
-                <Dialog open={showTemplateDialog && selectedSession?.id === session.id} onOpenChange={setShowTemplateDialog}>
+                <Dialog
+                  open={
+                    showTemplateDialog && selectedSession?.id === session.id
+                  }
+                  onOpenChange={setShowTemplateDialog}
+                >
                   <DialogTrigger asChild>
                     <Button
                       onClick={() => setSelectedSession(session)}
@@ -218,18 +300,21 @@ export default function GroupSessions() {
                     </DialogHeader>
                     <div className="space-y-4">
                       <div>
-                        <label className="text-sm font-medium">Template Name</label>
+                        <label
+                          htmlFor={`template-name-${session.id}`}
+                          className="text-sm font-medium"
+                        >
+                          Template Name
+                        </label>
                         <Input
+                          id={`template-name-${session.id}`}
                           placeholder="e.g., Weekly Team Focus"
                           value={templateName}
-                          onChange={(e) => setTemplateName(e.target.value)}
+                          onChange={e => setTemplateName(e.target.value)}
                           autoFocus
                         />
                       </div>
-                      <Button
-                        onClick={handleSaveAsTemplate}
-                        className="w-full"
-                      >
+                      <Button onClick={handleSaveAsTemplate} className="w-full">
                         Save Template
                       </Button>
                     </div>
@@ -241,6 +326,7 @@ export default function GroupSessions() {
                   variant="ghost"
                   size="sm"
                   className="text-destructive hover:bg-destructive/10"
+                  aria-label={`Delete ${session.title}`}
                 >
                   <Trash2 size={18} />
                 </Button>
@@ -257,11 +343,13 @@ export default function GroupSessions() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label htmlFor="participant-name" className="text-sm font-medium">Your name</label>
+              <label htmlFor="participant-name" className="text-sm font-medium">
+                Your name
+              </label>
               <Input
                 id="participant-name"
                 value={participantName}
-                onChange={(event) => setParticipantName(event.target.value)}
+                onChange={event => setParticipantName(event.target.value)}
                 placeholder="e.g., Hany"
                 autoFocus
                 maxLength={50}

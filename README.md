@@ -11,12 +11,12 @@ An offline-first focus session planner for students, freelancers, and knowledge 
 - **Session History**: View all completed sessions with details, outcomes, and distraction counts
 - **Daily Review**: Reflect on your focus day with session stats and personal notes
 - **Weekly Review**: Analyze weekly patterns (total sessions, focus time, average distractions, top template)
-- **Group Sessions**: Coordinate focus sessions with others using shareable links (coordinated, no backend)
-- **Browser Notifications**: Optional notifications for session start/end events
+- **Group Sessions**: Coordinate focus sessions with shareable links, optional cloud membership, and live presence
+- **Browser Notifications**: Optional five-minute reminders for upcoming group sessions
 - **Export/Import**: Backup your data as JSON and restore it anytime
 - **Offline-First**: All data stored locally in IndexedDB; works without internet
 - **Responsive Design**: Works on mobile, tablet, and desktop
-- **Accessible**: WCAG 2.2 AA compliant with keyboard navigation and screen reader support
+- **Accessible UI**: Keyboard-friendly controls, labels, focus states, and dialog descriptions; full WCAG conformance still needs a dedicated audit
 
 ## Getting Started
 
@@ -27,21 +27,36 @@ An offline-first focus session planner for students, freelancers, and knowledge 
 ### Local Setup
 
 1. Clone or download the project:
+
    ```bash
    cd focussessionflow
    ```
 
 2. Install dependencies:
+
    ```bash
    pnpm install
    ```
 
 3. Start the development server:
+
    ```bash
    pnpm dev
    ```
 
 4. Open your browser to `http://localhost:3000`
+
+### Optional Supabase Collaboration
+
+The app remains local-only when these variables are unset. To enable anonymous cloud identity, authoritative group sessions, join history, and live participant presence:
+
+1. Create a Supabase project and enable Anonymous Sign-Ins.
+2. Run all files in `supabase/migrations/` in filename order in the Supabase SQL Editor.
+3. Copy `.env.example` to `.env.local` and set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
+4. Restart the development server.
+
+Only the publishable key belongs in the browser. Do not expose a Supabase service-role key.
+The final migration enables a daily 03:00 UTC cleanup for anonymous accounts older than 30 days that have never created or joined a group session. Accounts with group-session records are retained so shared session history is not deleted.
 
 ### Build for Production
 
@@ -84,13 +99,15 @@ pnpm start
 4. Copy the generated link and share with others via email, chat, or messaging
 5. Share the complete invitation text for convenience
 
+Keep shared details general. Anyone with the invite link can see the session title, objective, organizer name, opening message, and meeting link. Do not include passwords, private notes, or sensitive information.
+
 ### Join a Group Session
 
 1. Receive a group session link from someone (looks like: `https://app.example.com/#...`)
 2. Click the link or paste it in your browser
 3. Review the session details (title, time, duration, organizer, meeting URL)
-4. Enter your personal intention (optional, stays private on your device)
-5. Click **Join Session**
+4. Click **Join Session**
+5. Add your personal intention in the active session view (optional and private)
 6. You'll be added to your local group sessions list
 
 ### Participate in a Group Session
@@ -104,7 +121,7 @@ pnpm start
 ### Review Your Sessions
 
 - **Dashboard**: See today's focus time, sessions completed, and recent activity
-- **History**: Browse all sessions, filter by status, and delete old entries
+- **History**: Search sessions, filter by status, and delete old entries
 - **Daily Review**: Reflect on today with session stats and personal notes
 - **Weekly Review**: Analyze patterns and trends from the past week
 
@@ -124,6 +141,7 @@ pnpm start
 ## Data Model
 
 ### SessionTemplate
+
 - `id`: Unique identifier
 - `name`: Template name (e.g., "Deep Work")
 - `duration`: Duration in minutes
@@ -132,6 +150,7 @@ pnpm start
 - `createdAt`: Timestamp
 
 ### FocusSession
+
 - `id`: Unique identifier
 - `templateId`: Reference to SessionTemplate
 - `templateName`: Template name (cached for convenience)
@@ -145,6 +164,7 @@ pnpm start
 - `createdAt`: Timestamp
 
 ### Distraction
+
 - `id`: Unique identifier
 - `sessionId`: Reference to FocusSession
 - `time`: Timestamp when distraction was logged
@@ -152,6 +172,7 @@ pnpm start
 - `note`: Description of the distraction
 
 ### DailyReview
+
 - `id`: Unique identifier
 - `date`: Date in YYYY-MM-DD format
 - `sessionsCompleted`: Number of completed sessions
@@ -160,6 +181,7 @@ pnpm start
 - `createdAt`: Timestamp
 
 ### GroupSession
+
 - `id`: Unique identifier
 - `payloadVersion`: Payload schema version
 - `title`: Session title
@@ -178,6 +200,7 @@ pnpm start
 ## Architecture
 
 ### Frontend Stack
+
 - **React 19**: UI framework
 - **TypeScript**: Type safety
 - **Tailwind CSS 4**: Styling
@@ -188,6 +211,7 @@ pnpm start
 - **Browser Notifications API**: Optional session notifications
 
 ### Key Directories
+
 ```
 client/
   src/
@@ -200,25 +224,29 @@ client/
 
 ### Group Sessions Architecture
 
-Group sessions use **coordinated timing** without a backend:
+Group sessions use coordinated timing with a local-first fallback and an optional Supabase collaboration boundary:
 
 1. **Organizer creates** a session with title, objective, start time, duration, and optional meeting link
 2. **Payload encoding**: Session details are encoded into a URL-safe base64 string
 3. **Link generation**: The payload is embedded in the URL hash (e.g., `#eyJ2ZXJzaW9uIjoxLCJzZXNzaW9uSWQiOiI...`)
-4. **Participant joins**: Participant receives link, decodes payload, and saves to local IndexedDB
+4. **Participant joins**: Participant receives the link, chooses a display name, and joins anonymously
 5. **Synchronized timer**: All participants see the same countdown based on absolute timestamps
 6. **Private outcomes**: Each participant's intentions, distractions, and outcomes stay on their device
-7. **No backend**: All coordination happens via URL sharing; no server required
+7. **Cloud mode**: Supabase stores the authoritative session, membership/join history, and anonymous display names; Realtime Presence shows who is currently connected
+8. **Local mode**: With no Supabase variables, URL sharing and browser-local participants continue to work without a server
 
 ### Data Persistence
+
 - All data is stored in IndexedDB (browser local storage)
-- No backend server required
+- No backend server required for local mode
+- Supabase is optional and used only for group collaboration
 - Data persists across browser sessions
 - Export/import enables manual backups and data portability
 
 ## Design System
 
 ### Colors
+
 - **Primary Accent**: `oklch(0.55 0.15 200)` — Calm teal for focus and clarity
 - **Success**: `oklch(0.65 0.15 140)` — Green for completion
 - **Warning**: `oklch(0.75 0.18 60)` — Amber for caution
@@ -226,27 +254,30 @@ Group sessions use **coordinated timing** without a backend:
 - **Neutral Scale**: Warm grays for text and backgrounds
 
 ### Typography
+
 - **Display**: Geist Bold, 32px for page titles
 - **Heading**: Geist Semibold, 20px for section headers
 - **Body**: Geist Mono, 14px for readable text
 - **UI Labels**: Geist Medium, 12px uppercase for buttons and form labels
 
 ### Spacing
+
 - 4px, 8px, 16px, 24px, 32px (multiples of 4px)
 - Consistent padding and margins throughout
 
 ## Testing
 
 The app includes realistic seed data for immediate testing:
+
 - 4 session templates (Deep Work, Quick Focus, Study Session, Creative Work)
 - 4 completed sessions with various outcomes and distractions
 - 2 daily reviews with reflection notes
 
-All features can be tested immediately upon first load without manual setup.
+The app seeds templates, completed sessions, reviews, and example group sessions on first load. Focused unit tests cover payload validation/encoding, phase timing, local dates, pause accounting, and local-data boundaries.
 
 ## Accessibility
 
-- **WCAG 2.2 AA Compliant**: Contrast ratios meet standards
+- **Accessibility**: Keyboard and screen-reader support is implemented in the main flows; run a dedicated accessibility audit before claiming WCAG conformance
 - **Keyboard Navigation**: All controls accessible via keyboard
 - **Focus Indicators**: Clear focus rings on interactive elements
 - **Semantic HTML**: Proper heading hierarchy and form labels
@@ -265,19 +296,20 @@ All features can be tested immediately upon first load without manual setup.
 - **Single-device**: Data is stored locally; not synchronized across devices
 - **No cloud sync**: Manual export/import required for data portability
 - **Storage limits**: IndexedDB quota depends on browser (typically 50MB+)
-- **Group sessions are coordinated only**: No backend; participants don't see each other's data
+- **Group sessions**: Local mode is coordinated only; configured cloud mode adds anonymous membership and live presence while personal activity remains local
 
 ## Privacy
 
-- **No tracking**: No analytics, cookies, or third-party services
-- **Local storage only**: All data stays on your device
-- **No account required**: Complete anonymity
+- **No tracking**: No analytics or advertising services; configured cloud mode uses Supabase for group collaboration
+- **Local storage only**: Personal IndexedDB and localStorage data stays on your device
+- **No account required**: Anonymous Supabase identity is used only when cloud collaboration is enabled
 - **Data ownership**: You control all exports and backups
 - **Group sessions**: Shared details (title, time, organizer name) are in the URL; personal intentions/outcomes stay private
 
 ## Development
 
 ### Project Structure
+
 ```
 focussessionflow/
 ├── client/              ← React frontend
@@ -324,7 +356,7 @@ pnpm format       # Format code with Prettier
 
 ## Future Enhancements
 
-- Cloud sync with optional Supabase backend
+- Broader cloud sync for personal data, if privacy requirements support it
 - Multi-device sync
 - Recurring session templates
 - Session analytics and charts
@@ -332,7 +364,7 @@ pnpm format       # Format code with Prettier
 - Dark mode toggle
 - Custom color themes
 - Group session history and analytics
-- Participant attendance tracking (local only)
+- Participant attendance and join history (cloud mode already records group joins)
 - Session templates for recurring group sessions
 
 ## License

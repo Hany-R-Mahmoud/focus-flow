@@ -7,13 +7,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { createGroupSession } from "@/lib/db";
+import { saveDisplayName } from "@/lib/supabase";
+import { syncGroupSessionToCloud } from "@/lib/cloudGroupSessions";
+import { isSupabaseConfigured } from "@/lib/supabase";
 import {
   generateSessionId,
   generateGroupSessionLink,
   GroupSessionPayload,
   validatePayload,
 } from "@/lib/groupSession";
-import { Copy, Check, Eye, Share2 } from "lucide-react";
+import { AlertCircle, Check, Copy, Eye, Share2 } from "lucide-react";
 
 export default function CreateGroupSession() {
   const [, setLocation] = useLocation();
@@ -39,9 +42,12 @@ export default function CreateGroupSession() {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
-      [name]: name === "focusMinutes" || name === "breakMinutes" ? parseInt(value) : value,
+      [name]:
+        name === "focusMinutes" || name === "breakMinutes"
+          ? parseInt(value)
+          : value,
     }));
   };
 
@@ -69,8 +75,20 @@ export default function CreateGroupSession() {
         return;
       }
 
+      if (
+        !Number.isInteger(formData.breakMinutes) ||
+        formData.breakMinutes < 0 ||
+        formData.breakMinutes > 120
+      ) {
+        toast.error("Break duration must be between 0 and 120 minutes");
+        setLoading(false);
+        return;
+      }
+
       // Create ISO timestamp
-      const startDateTime = new Date(`${formData.startDate}T${formData.startTime}`);
+      const startDateTime = new Date(
+        `${formData.startDate}T${formData.startTime}`
+      );
       if (isNaN(startDateTime.getTime())) {
         toast.error("Invalid date or time");
         setLoading(false);
@@ -85,7 +103,8 @@ export default function CreateGroupSession() {
         sharedObjective: formData.sharedObjective.trim() || undefined,
         startsAt: startDateTime.toISOString(),
         focusMinutes: formData.focusMinutes,
-        breakMinutes: formData.breakMinutes > 0 ? formData.breakMinutes : undefined,
+        breakMinutes:
+          formData.breakMinutes > 0 ? formData.breakMinutes : undefined,
         meetingUrl: formData.meetingUrl.trim() || undefined,
         organizerName: formData.organizerName.trim() || undefined,
         openingMessage: formData.openingMessage.trim() || undefined,
@@ -99,7 +118,7 @@ export default function CreateGroupSession() {
         return;
       }
 
-      // Save to database and get the ID
+      const link = generateGroupSessionLink(newPayload);
       const savedSession = await createGroupSession({
         payloadVersion: newPayload.version,
         title: newPayload.title,
@@ -110,11 +129,28 @@ export default function CreateGroupSession() {
         meetingUrl: newPayload.meetingUrl,
         organizerName: newPayload.organizerName,
         openingMessage: newPayload.openingMessage,
+        payloadSessionId: newPayload.sessionId,
         source: "created",
       });
 
-      const link = generateGroupSessionLink(newPayload);
-      
+      try {
+        if (newPayload.organizerName) {
+          await saveDisplayName(newPayload.organizerName);
+        }
+        await syncGroupSessionToCloud(newPayload);
+      } catch (cloudError) {
+        const message =
+          cloudError instanceof Error ? cloudError.message : "Unknown error";
+        console.warn(`Cloud group-session sync unavailable. ${message}`);
+        if (isSupabaseConfigured) {
+          toast.error(
+            "Could not publish the session to Supabase. No invite link was created."
+          );
+          return;
+        }
+        toast.warning("Saved locally; cloud sync is unavailable.");
+      }
+
       setSessionId(savedSession.id);
       setGeneratedLink(link);
       setPayload(newPayload);
@@ -161,16 +197,34 @@ Join here: ${generatedLink}`;
 
   const handleGoToSession = () => {
     if (sessionId) {
-      setLocation(`/group-sessions`);
+      setLocation(`/active-group/${sessionId}`);
     }
   };
 
   return (
     <div className="max-w-2xl mx-auto py-8 px-4">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Plan Group Session</h1>
-        <p className="text-muted-foreground">Create a scheduled focus session to share with others</p>
+        <h1 className="text-3xl font-bold text-foreground mb-2">
+          Plan Group Session
+        </h1>
+        <p className="text-muted-foreground">
+          Create a scheduled focus session to share with others
+        </p>
       </div>
+
+      <Card className="mb-6 border-amber-200 bg-amber-50 p-4">
+        <div className="flex items-start gap-3">
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
+          <div className="text-sm text-amber-950">
+            <p className="font-medium">Keep shared details general</p>
+            <p className="mt-1">
+              The title, objective, name, opening message, and meeting link can
+              be seen by anyone with the invite link. Do not add passwords,
+              private notes, or sensitive information.
+            </p>
+          </div>
+        </div>
+      </Card>
 
       <form onSubmit={handleCreateSession} className="space-y-6">
         <Card className="p-6 space-y-4">
@@ -184,7 +238,9 @@ Join here: ${generatedLink}`;
               onChange={handleInputChange}
               maxLength={100}
             />
-            <p className="text-xs text-muted-foreground mt-1">{formData.title.length}/100</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {formData.title.length}/100
+            </p>
           </div>
 
           <div>
@@ -198,7 +254,9 @@ Join here: ${generatedLink}`;
               maxLength={300}
               rows={3}
             />
-            <p className="text-xs text-muted-foreground mt-1">{formData.sharedObjective.length}/300</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {formData.sharedObjective.length}/300
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -260,7 +318,9 @@ Join here: ${generatedLink}`;
               value={formData.meetingUrl}
               onChange={handleInputChange}
             />
-            <p className="text-xs text-muted-foreground mt-1">Optional: Link to your video meeting</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Optional: Link to your video meeting
+            </p>
           </div>
 
           <div>
@@ -273,7 +333,9 @@ Join here: ${generatedLink}`;
               onChange={handleInputChange}
               maxLength={50}
             />
-            <p className="text-xs text-muted-foreground mt-1">Optional: Displayed to participants</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Optional: Displayed to participants
+            </p>
           </div>
 
           <div>
@@ -287,7 +349,9 @@ Join here: ${generatedLink}`;
               maxLength={500}
               rows={2}
             />
-            <p className="text-xs text-muted-foreground mt-1">{formData.openingMessage.length}/500</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {formData.openingMessage.length}/500
+            </p>
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>
@@ -300,7 +364,9 @@ Join here: ${generatedLink}`;
         <Card className="p-6 mt-6 space-y-4 bg-blue-50 border-blue-200">
           <div className="flex items-center gap-2 mb-4">
             <Share2 size={20} className="text-blue-600" />
-            <h2 className="text-lg font-semibold text-blue-900">Share Your Session</h2>
+            <h2 className="text-lg font-semibold text-blue-900">
+              Share Your Session
+            </h2>
           </div>
 
           <div className="space-y-2">
@@ -336,7 +402,8 @@ Join here: ${generatedLink}`;
 
           <div className="pt-4 border-t border-blue-200">
             <p className="text-xs text-blue-700">
-              💡 Share the link via email, chat, or messaging app. Each participant joins independently on their device.
+              💡 Share the link via email, chat, or messaging app. Each
+              participant joins independently on their device.
             </p>
           </div>
 
@@ -345,7 +412,7 @@ Join here: ${generatedLink}`;
             className="w-full gap-2 bg-teal-600 hover:bg-teal-700"
           >
             <Eye size={18} />
-            View Session
+            Open Session
           </Button>
 
           <Button

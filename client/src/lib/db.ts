@@ -1,3 +1,12 @@
+import {
+  clearGroupSessionLocalData,
+  clearLocalData,
+  exportLocalData,
+  replaceLocalData,
+  validateLocalData,
+} from "./localData";
+import { getLocalDayStart } from "./time";
+
 /**
  * IndexedDB persistence layer for FocusSessionFlow
  * Handles all local data storage and retrieval
@@ -27,6 +36,7 @@ export interface FocusSession {
   startTime: number; // timestamp
   endTime: number | null; // null if not finished
   pausedTime: number; // total paused duration in ms
+  pausedAt?: number | null;
   taskIntention: string;
   outcome: string;
   distractions: Distraction[];
@@ -54,6 +64,9 @@ export interface GroupSession {
   meetingUrl?: string;
   organizerName?: string;
   openingMessage?: string;
+  payloadSessionId?: string;
+  outcome?: string;
+  reflection?: string;
   source: "created" | "joined";
   joinedAt?: string;
   createdAt: string;
@@ -61,7 +74,7 @@ export interface GroupSession {
 }
 
 const DB_NAME = "FocusSessionFlow";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 const STORES = {
   TEMPLATES: "sessionTemplates",
@@ -71,19 +84,28 @@ const STORES = {
 };
 
 let db: IDBDatabase | null = null;
+let dbPromise: Promise<IDBDatabase> | null = null;
 
 export async function initDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
+  if (db) return db;
+  if (dbPromise) return dbPromise;
+
+  dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onerror = () => reject(request.error);
     request.onsuccess = () => {
       db = request.result;
+      db.onclose = () => {
+        db = null;
+        dbPromise = null;
+      };
       resolve(db);
     };
 
-    request.onupgradeneeded = (event) => {
+    request.onupgradeneeded = event => {
       const database = (event.target as IDBOpenDBRequest).result;
+      const upgradeTransaction = (event.target as IDBOpenDBRequest).transaction;
 
       // Create object stores if they don't exist
       if (!database.objectStoreNames.contains(STORES.TEMPLATES)) {
@@ -116,14 +138,34 @@ export async function initDB(): Promise<IDBDatabase> {
         groupStore.createIndex("startsAt", "startsAt", { unique: false });
         groupStore.createIndex("source", "source", { unique: false });
         groupStore.createIndex("createdAt", "createdAt", { unique: false });
+        groupStore.createIndex("payloadSessionId", "payloadSessionId", {
+          unique: false,
+        });
+      } else if (
+        upgradeTransaction &&
+        !upgradeTransaction
+          .objectStore(STORES.GROUP_SESSIONS)
+          .indexNames.contains("payloadSessionId")
+      ) {
+        upgradeTransaction
+          .objectStore(STORES.GROUP_SESSIONS)
+          .createIndex("payloadSessionId", "payloadSessionId", {
+            unique: false,
+          });
       }
     };
+  }).catch(error => {
+    dbPromise = null;
+    throw error;
   });
+
+  return dbPromise;
 }
 
 function getDB(): IDBDatabase {
   if (!db) throw new Error("Database not initialized. Call initDB() first.");
-  return db;
+  const database = db;
+  return database;
 }
 
 // Template operations
@@ -254,17 +296,28 @@ export async function updateSession(
   updates: Partial<Omit<FocusSession, "id" | "createdAt">>
 ): Promise<FocusSession> {
   const database = getDB();
-  const existing = await getSession(id);
-  if (!existing) throw new Error(`Session ${id} not found`);
-
-  const updated = { ...existing, ...updates };
   return new Promise((resolve, reject) => {
     const transaction = database.transaction([STORES.SESSIONS], "readwrite");
     const store = transaction.objectStore(STORES.SESSIONS);
-    const request = store.put(updated);
+    const request = store.get(id);
 
     request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(updated);
+    request.onsuccess = () => {
+      const existing = request.result as FocusSession | undefined;
+      if (!existing) {
+        reject(new Error(`Session ${id} not found`));
+        return;
+      }
+      if (existing.status === "completed" || existing.status === "abandoned") {
+        reject(new Error("Cannot update a closed session"));
+        return;
+      }
+
+      const updated = { ...existing, ...updates };
+      const putRequest = store.put(updated);
+      putRequest.onerror = () => reject(putRequest.error);
+      putRequest.onsuccess = () => resolve(updated);
+    };
   });
 }
 
@@ -282,10 +335,11 @@ export async function deleteSession(id: string): Promise<void> {
 
 export async function getSessionsByDate(date: string): Promise<FocusSession[]> {
   const sessions = await getSessions();
-  const dateStart = new Date(date).getTime();
+  const [year, month, day] = date.split("-").map(Number);
+  const dateStart = new Date(year, month - 1, day).getTime();
   const dateEnd = dateStart + 24 * 60 * 60 * 1000;
   return sessions.filter(
-    (s) => s.startTime >= dateStart && s.startTime < dateEnd
+    s => s.startTime >= dateStart && s.startTime < dateEnd
   );
 }
 
@@ -369,7 +423,10 @@ export async function createGroupSession(
   };
 
   return new Promise((resolve, reject) => {
-    const transaction = database.transaction([STORES.GROUP_SESSIONS], "readwrite");
+    const transaction = database.transaction(
+      [STORES.GROUP_SESSIONS],
+      "readwrite"
+    );
     const store = transaction.objectStore(STORES.GROUP_SESSIONS);
     const request = store.add(newSession);
 
@@ -381,23 +438,54 @@ export async function createGroupSession(
 export async function getGroupSessions(): Promise<GroupSession[]> {
   const database = getDB();
   return new Promise((resolve, reject) => {
-    const transaction = database.transaction([STORES.GROUP_SESSIONS], "readonly");
+    const transaction = database.transaction(
+      [STORES.GROUP_SESSIONS],
+      "readonly"
+    );
     const store = transaction.objectStore(STORES.GROUP_SESSIONS);
     const request = store.getAll();
 
     request.onerror = () => reject(request.error);
     request.onsuccess = () =>
-      resolve(request.result.sort((a, b) => new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime()));
+      resolve(
+        request.result.sort(
+          (a, b) =>
+            new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime()
+        )
+      );
   });
 }
 
-export async function getGroupSession(id: string): Promise<GroupSession | null> {
+export async function getGroupSession(
+  id: string
+): Promise<GroupSession | null> {
   const database = getDB();
   return new Promise((resolve, reject) => {
-    const transaction = database.transaction([STORES.GROUP_SESSIONS], "readonly");
+    const transaction = database.transaction(
+      [STORES.GROUP_SESSIONS],
+      "readonly"
+    );
     const store = transaction.objectStore(STORES.GROUP_SESSIONS);
     const request = store.get(id);
 
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result || null);
+  });
+}
+
+export async function getGroupSessionByPayloadId(
+  payloadSessionId: string
+): Promise<GroupSession | null> {
+  const database = getDB();
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(
+      [STORES.GROUP_SESSIONS],
+      "readonly"
+    );
+    const request = transaction
+      .objectStore(STORES.GROUP_SESSIONS)
+      .index("payloadSessionId")
+      .get(payloadSessionId);
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve(request.result || null);
   });
@@ -418,7 +506,10 @@ export async function updateGroupSession(
   };
 
   return new Promise((resolve, reject) => {
-    const transaction = database.transaction([STORES.GROUP_SESSIONS], "readwrite");
+    const transaction = database.transaction(
+      [STORES.GROUP_SESSIONS],
+      "readwrite"
+    );
     const store = transaction.objectStore(STORES.GROUP_SESSIONS);
     const request = store.put(updated);
 
@@ -430,34 +521,51 @@ export async function updateGroupSession(
 export async function deleteGroupSession(id: string): Promise<void> {
   const database = getDB();
   return new Promise((resolve, reject) => {
-    const transaction = database.transaction([STORES.GROUP_SESSIONS], "readwrite");
+    const transaction = database.transaction(
+      [STORES.GROUP_SESSIONS],
+      "readwrite"
+    );
     const store = transaction.objectStore(STORES.GROUP_SESSIONS);
     const request = store.delete(id);
 
     request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+    transaction.oncomplete = () => {
+      clearGroupSessionLocalData(id);
+      resolve();
+    };
   });
 }
 
 // Seeding function
 export async function seedDatabase(): Promise<void> {
-  try {
-    const { generateSeedData } = await import("./seed");
-    const { groupSessions: seedGroupSessions } = generateSeedData();
-    
-    // Check if group sessions already exist
-    const existing = await getGroupSessions();
-    if (existing.length > 0) {
-      return; // Already seeded
-    }
+  const { generateSeedData } = await import("./seed");
+  const seed = generateSeedData();
+  await Promise.all([
+    seedStoreIfEmpty(STORES.TEMPLATES, seed.templates),
+    seedStoreIfEmpty(STORES.SESSIONS, seed.sessions),
+    seedStoreIfEmpty(STORES.REVIEWS, seed.reviews),
+    seedStoreIfEmpty(STORES.GROUP_SESSIONS, seed.groupSessions),
+  ]);
+}
 
-    // Add seed group sessions
-    for (const session of seedGroupSessions) {
-      await createGroupSession(session);
-    }
-  } catch (err) {
-    console.error("Error seeding database:", err);
-  }
+async function seedStoreIfEmpty(
+  storeName: string,
+  records: unknown[]
+): Promise<void> {
+  const database = getDB();
+  await new Promise<void>((resolve, reject) => {
+    const transaction = database.transaction([storeName], "readwrite");
+    const store = transaction.objectStore(storeName);
+    const countRequest = store.count();
+    countRequest.onsuccess = () => {
+      if (countRequest.result > 0) return;
+      for (const record of records) store.add(record);
+    };
+    countRequest.onerror = () => reject(countRequest.error);
+    transaction.onerror = () => reject(transaction.error);
+    transaction.oncomplete = () => resolve();
+  });
 }
 
 // Export/Import (updated for group sessions)
@@ -465,7 +573,9 @@ export async function exportData(): Promise<{
   templates: SessionTemplate[];
   sessions: FocusSession[];
   reviews: DailyReview[];
-  groupSessions?: GroupSession[];
+  groupSessions: GroupSession[];
+  localData: Record<string, string>;
+  snapshotVersion: 1;
 }> {
   const [templates, sessions, reviews, groupSessions] = await Promise.all([
     getTemplates(),
@@ -474,52 +584,129 @@ export async function exportData(): Promise<{
     getGroupSessions(),
   ]);
 
-  return { templates, sessions, reviews, groupSessions };
+  return {
+    templates,
+    sessions,
+    reviews,
+    groupSessions,
+    localData: exportLocalData(),
+    snapshotVersion: 1,
+  };
 }
 
 export async function importData(data: {
-  templates?: SessionTemplate[];
-  sessions?: FocusSession[];
-  reviews?: DailyReview[];
+  snapshotVersion?: number;
+  templates: SessionTemplate[];
+  sessions: FocusSession[];
+  reviews: DailyReview[];
   groupSessions?: GroupSession[];
+  localData?: Record<string, string>;
 }): Promise<void> {
   const database = getDB();
 
-  // Clear existing data
-  const transaction = database.transaction(
-    [STORES.TEMPLATES, STORES.SESSIONS, STORES.REVIEWS, STORES.GROUP_SESSIONS],
-    "readwrite"
-  );
-  transaction.objectStore(STORES.TEMPLATES).clear();
-  transaction.objectStore(STORES.SESSIONS).clear();
-  transaction.objectStore(STORES.REVIEWS).clear();
-  transaction.objectStore(STORES.GROUP_SESSIONS).clear();
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    throw new Error("Invalid backup format");
+  }
+  if (data.snapshotVersion !== undefined && data.snapshotVersion !== 1) {
+    throw new Error("Unsupported backup version");
+  }
+  validateLocalData(data.localData);
+  for (const key of ["templates", "sessions", "reviews"] as const) {
+    if (!Array.isArray(data[key])) {
+      throw new Error(`Invalid ${key} data`);
+    }
+  }
+  if (data.groupSessions !== undefined && !Array.isArray(data.groupSessions)) {
+    throw new Error("Invalid groupSessions data");
+  }
+  const records = [
+    data.templates,
+    data.sessions,
+    data.reviews,
+    data.groupSessions,
+  ]
+    .filter(Boolean)
+    .flat();
+  if (
+    records.some(
+      record =>
+        !record ||
+        typeof record !== "object" ||
+        typeof (record as { id?: unknown }).id !== "string"
+    )
+  ) {
+    throw new Error("Backup records must have string IDs");
+  }
 
-  // Import new data
-  if (data.templates) {
-    for (const template of data.templates) {
-      transaction.objectStore(STORES.TEMPLATES).add(template);
+  const previousLocalData = exportLocalData();
+  replaceLocalData(data.localData);
+
+  const getImportFailure = (cause: unknown): Error => {
+    try {
+      replaceLocalData(previousLocalData);
+    } catch (rollbackError) {
+      return new Error(
+        `Backup import failed and local data rollback failed: ${String(rollbackError)}`
+      );
     }
-  }
-  if (data.sessions) {
-    for (const session of data.sessions) {
-      transaction.objectStore(STORES.SESSIONS).add(session);
+
+    return cause instanceof Error ? cause : new Error("Backup import failed");
+  };
+
+  let transaction: IDBTransaction;
+  try {
+    transaction = database.transaction(
+      [
+        STORES.TEMPLATES,
+        STORES.SESSIONS,
+        STORES.REVIEWS,
+        STORES.GROUP_SESSIONS,
+      ],
+      "readwrite"
+    );
+    transaction.objectStore(STORES.TEMPLATES).clear();
+    transaction.objectStore(STORES.SESSIONS).clear();
+    transaction.objectStore(STORES.REVIEWS).clear();
+    transaction.objectStore(STORES.GROUP_SESSIONS).clear();
+
+    if (data.templates) {
+      for (const template of data.templates) {
+        transaction.objectStore(STORES.TEMPLATES).add(template);
+      }
     }
-  }
-  if (data.reviews) {
-    for (const review of data.reviews) {
-      transaction.objectStore(STORES.REVIEWS).add(review);
+    if (data.sessions) {
+      for (const session of data.sessions) {
+        transaction.objectStore(STORES.SESSIONS).add(session);
+      }
     }
-  }
-  if (data.groupSessions) {
-    for (const groupSession of data.groupSessions) {
-      transaction.objectStore(STORES.GROUP_SESSIONS).add(groupSession);
+    if (data.reviews) {
+      for (const review of data.reviews) {
+        transaction.objectStore(STORES.REVIEWS).add(review);
+      }
     }
+    if (data.groupSessions) {
+      for (const groupSession of data.groupSessions) {
+        transaction.objectStore(STORES.GROUP_SESSIONS).add(groupSession);
+      }
+    }
+  } catch (error) {
+    throw getImportFailure(error);
   }
 
   return new Promise((resolve, reject) => {
-    transaction.onerror = () => reject(transaction.error);
-    transaction.oncomplete = () => resolve();
+    let settled = false;
+    const failImport = (transactionError: unknown) => {
+      if (settled) return;
+      settled = true;
+      reject(getImportFailure(transactionError));
+    };
+    transaction.onerror = () => failImport(transaction.error);
+    transaction.onabort = () =>
+      failImport(transaction.error ?? new Error("Backup import aborted"));
+    transaction.oncomplete = () => {
+      settled = true;
+      resolve();
+    };
   });
 }
 
@@ -538,6 +725,9 @@ export async function clearAllData(): Promise<void> {
 
   return new Promise((resolve, reject) => {
     transaction.onerror = () => reject(transaction.error);
-    transaction.oncomplete = () => resolve();
+    transaction.oncomplete = () => {
+      clearLocalData();
+      resolve();
+    };
   });
 }
