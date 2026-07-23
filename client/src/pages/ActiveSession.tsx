@@ -1,17 +1,31 @@
 import { useEffect, useState } from "react";
 import { useRoute, useLocation } from "wouter";
-import { getSession, updateSession, getTemplate, createSession, FocusSession, SessionTemplate } from "@/lib/db";
+import {
+  getSession,
+  updateSession,
+  getTemplate,
+  getTemplates,
+  createSession,
+  FocusSession,
+  SessionTemplate,
+} from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Play, Pause, Square, AlertCircle } from "lucide-react";
-import { formatTime } from "@/lib/time";
+import { formatTime, getElapsedSessionTime } from "@/lib/time";
 import { toast } from "sonner";
 
 export default function ActiveSession() {
   const [match, params] = useRoute("/session/:id");
+  const sessionId = params?.id;
   const [, setLocation] = useLocation();
   const [session, setSession] = useState<FocusSession | null>(null);
   const [template, setTemplate] = useState<SessionTemplate | null>(null);
@@ -28,11 +42,10 @@ export default function ActiveSession() {
 
   useEffect(() => {
     async function loadSession() {
-      if (!match || !params) return;
+      if (!match || !sessionId) return;
 
-      const id = (params as any).id;
+      const id = sessionId;
       if (id === "new") {
-        const { getTemplates } = await import("@/lib/db");
         const templates = await getTemplates();
         if (templates.length === 0) {
           toast.error("No templates available. Create one first.");
@@ -46,6 +59,7 @@ export default function ActiveSession() {
           startTime: Date.now(),
           endTime: null,
           pausedTime: 0,
+          pausedAt: null,
           taskIntention: "",
           outcome: "",
           distractions: [],
@@ -66,41 +80,76 @@ export default function ActiveSession() {
         setTemplate(sessionTemplate);
         setTaskIntention(existingSession.taskIntention);
         setOutcome(existingSession.outcome);
+        setElapsedTime(
+          getElapsedSessionTime(
+            existingSession.startTime,
+            existingSession.pausedTime,
+            existingSession.status,
+            existingSession.endTime,
+            existingSession.pausedAt
+          )
+        );
 
-        if (existingSession.status === "active" || existingSession.status === "paused") {
+        if (
+          existingSession.status === "active" ||
+          existingSession.status === "paused"
+        ) {
           setIsRunning(existingSession.status === "active");
         }
       }
     }
 
     loadSession();
-  }, [match, params, setLocation]);
+  }, [match, sessionId, setLocation]);
 
-  // Timer effect
   useEffect(() => {
-    if (!isRunning || !session) return;
+    if (!session) return;
 
-    const interval = setInterval(() => {
-      setElapsedTime((prev) => prev + 1000);
-    }, 1000);
+    const updateElapsed = () => {
+      setElapsedTime(
+        getElapsedSessionTime(
+          session.startTime,
+          session.pausedTime,
+          session.status,
+          session.endTime,
+          session.pausedAt
+        )
+      );
+    };
+    updateElapsed();
+    if (!isRunning) return;
 
+    const interval = setInterval(updateElapsed, 250);
     return () => clearInterval(interval);
   }, [isRunning, session]);
 
   async function handlePauseResume() {
     if (!session) return;
+    if (session.status !== "active" && session.status !== "paused") {
+      toast.error("This session is already closed");
+      return;
+    }
 
     try {
       if (isRunning) {
-        await updateSession(session.id, {
+        const updatedSession = await updateSession(session.id, {
           status: "paused",
+          pausedAt: Date.now(),
         });
+        setSession(updatedSession);
         setIsRunning(false);
         toast.success("Session paused");
       } else {
-        await updateSession(session.id, {
+        const now = Date.now();
+        const pausedDuration = session.pausedAt
+          ? Math.max(0, now - session.pausedAt)
+          : 0;
+        const updatedSession = await updateSession(session.id, {
           status: "active",
+          pausedTime: session.pausedTime + pausedDuration,
+          pausedAt: null,
         });
+        setSession(updatedSession);
         setIsRunning(true);
         toast.success("Session resumed");
       }
@@ -138,12 +187,22 @@ export default function ActiveSession() {
     if (!session) return;
 
     try {
-      await updateSession(session.id, {
+      const now = Date.now();
+      const pausedDuration =
+        session.status === "paused" && session.pausedAt
+          ? Math.max(0, now - session.pausedAt)
+          : 0;
+      const updatedSession = await updateSession(session.id, {
         endTime: Date.now(),
         status: "completed",
+        pausedTime: session.pausedTime + pausedDuration,
+        pausedAt: null,
         taskIntention,
         outcome,
       });
+      setSession(updatedSession);
+      setIsRunning(false);
+      setShowOutcomeDialog(false);
       toast.success("Session completed!");
       setTimeout(() => setLocation("/history"), 1000);
     } catch (err) {
@@ -168,7 +227,9 @@ export default function ActiveSession() {
   return (
     <div className="p-6 md:p-8 pb-24 md:pb-8 max-w-2xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">{template.name}</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-2">
+          {template.name}
+        </h1>
         <p className="text-muted-foreground">{template.description}</p>
       </div>
 
@@ -190,6 +251,9 @@ export default function ActiveSession() {
         <div className="flex gap-3 justify-center flex-wrap">
           <Button
             size="lg"
+            disabled={
+              session.status !== "active" && session.status !== "paused"
+            }
             className={`gap-2 ${
               isRunning
                 ? "bg-amber-500 hover:bg-amber-600"
@@ -197,7 +261,11 @@ export default function ActiveSession() {
             } text-white`}
             onClick={handlePauseResume}
           >
-            {isRunning ? (
+            {session.status === "completed" ? (
+              "Completed"
+            ) : session.status === "abandoned" ? (
+              "Abandoned"
+            ) : isRunning ? (
               <>
                 <Pause size={20} />
                 Pause
@@ -227,7 +295,7 @@ export default function ActiveSession() {
             Distractions ({session.distractions.length})
           </h3>
           <div className="space-y-2">
-            {session.distractions.map((d) => (
+            {session.distractions.map(d => (
               <div
                 key={d.id}
                 className="text-sm p-3 bg-muted rounded flex items-start gap-3"
@@ -249,7 +317,7 @@ export default function ActiveSession() {
         <Textarea
           id="intention"
           value={taskIntention}
-          onChange={(e) => setTaskIntention(e.target.value)}
+          onChange={e => setTaskIntention(e.target.value)}
           placeholder="Describe your task or goal for this session..."
           className="mb-4"
         />
@@ -277,7 +345,7 @@ export default function ActiveSession() {
               <Textarea
                 id="outcome"
                 value={outcome}
-                onChange={(e) => setOutcome(e.target.value)}
+                onChange={e => setOutcome(e.target.value)}
                 placeholder="Describe what you completed and any notes..."
               />
             </div>
@@ -291,7 +359,10 @@ export default function ActiveSession() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showDistractionDialog} onOpenChange={setShowDistractionDialog}>
+      <Dialog
+        open={showDistractionDialog}
+        onOpenChange={setShowDistractionDialog}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Log a Distraction</DialogTitle>
@@ -302,8 +373,11 @@ export default function ActiveSession() {
               <select
                 id="category"
                 value={distractionForm.category}
-                onChange={(e) =>
-                  setDistractionForm({ ...distractionForm, category: e.target.value })
+                onChange={e =>
+                  setDistractionForm({
+                    ...distractionForm,
+                    category: e.target.value,
+                  })
                 }
                 className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
               >
@@ -319,8 +393,11 @@ export default function ActiveSession() {
               <Input
                 id="note"
                 value={distractionForm.note}
-                onChange={(e) =>
-                  setDistractionForm({ ...distractionForm, note: e.target.value })
+                onChange={e =>
+                  setDistractionForm({
+                    ...distractionForm,
+                    note: e.target.value,
+                  })
                 }
                 placeholder="What distracted you?"
               />

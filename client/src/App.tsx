@@ -21,7 +21,7 @@ import GroupSessions from "./pages/GroupSessions";
 import ActiveGroupSession from "./pages/ActiveGroupSession";
 import { useSessionReminders } from "@/hooks/useSessionReminders";
 import { seedDatabase, initDB } from "@/lib/db";
-import { ensureAnonymousUser } from "@/lib/supabase";
+import SeoMetadata from "./components/SeoMetadata";
 
 function Router() {
   return (
@@ -67,13 +67,6 @@ function App() {
 
   useEffect(() => {
     let cancelled = false;
-    void ensureAnonymousUser().catch(error => {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      console.warn(
-        `Supabase anonymous auth unavailable; using local mode. ${message}`
-      );
-    });
-
     initDB()
       .then(() => seedDatabase())
       .then(() => {
@@ -91,29 +84,38 @@ function App() {
 
   if (startupError) {
     return (
-      <div className="min-h-screen p-8 text-center text-destructive">
-        {startupError}
-      </div>
+      <>
+        <SeoMetadata />
+        <div className="min-h-screen p-8 text-center text-destructive">
+          {startupError}
+        </div>
+      </>
     );
   }
 
   if (!isReady) {
     return (
-      <div className="min-h-screen p-8 text-center text-muted-foreground">
-        Preparing your focus space…
-      </div>
+      <>
+        <SeoMetadata />
+        <div className="min-h-screen p-8 text-center text-muted-foreground">
+          Preparing your focus space…
+        </div>
+      </>
     );
   }
 
   return (
-    <ErrorBoundary>
-      <ThemeProvider defaultTheme="light">
-        <TooltipProvider>
-          <Toaster />
-          <AppContent />
-        </TooltipProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
+    <>
+      <SeoMetadata />
+      <ErrorBoundary>
+        <ThemeProvider defaultTheme="light">
+          <TooltipProvider>
+            <Toaster />
+            <AppContent />
+          </TooltipProvider>
+        </ThemeProvider>
+      </ErrorBoundary>
+    </>
   );
 }
 

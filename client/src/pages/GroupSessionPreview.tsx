@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { TurnstileChallenge } from "@/components/TurnstileChallenge";
 import { toast } from "sonner";
 import {
   createGroupSession,
@@ -25,7 +26,10 @@ import {
   getCloudGroupSessionByPayloadId,
   joinCloudGroupSession,
 } from "@/lib/cloudGroupSessions";
-import { isSupabaseConfigured } from "@/lib/supabase";
+import {
+  isSupabaseConfigured,
+  isTurnstileConfigured,
+} from "@/lib/supabase";
 import {
   claimActiveGroupSession,
   releaseActiveGroupSession,
@@ -50,6 +54,7 @@ export default function GroupSessionPreview() {
   const [pendingPayload, setPendingPayload] =
     useState<GroupSessionPayload | null>(null);
   const [joining, setJoining] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -192,6 +197,16 @@ export default function GroupSessionPreview() {
     if (!session || joining) return;
 
     setJoining(true);
+    if (isSupabaseConfigured && !isTurnstileConfigured) {
+      toast.error("Configure Turnstile before joining");
+      setJoining(false);
+      return;
+    }
+    if (isSupabaseConfigured && !captchaToken) {
+      toast.error("Complete the CAPTCHA before joining");
+      setJoining(false);
+      return;
+    }
     const activeSessionKey =
       pendingPayload?.sessionId || session.payloadSessionId || session.id;
     if (!claimActiveGroupSession(activeSessionKey)) {
@@ -206,7 +221,11 @@ export default function GroupSessionPreview() {
       if (pendingPayload) {
         await initDB();
         const cloudJoined = isSupabaseConfigured
-          ? await joinCloudGroupSession(pendingPayload.sessionId, name)
+          ? await joinCloudGroupSession(
+              pendingPayload.sessionId,
+              name,
+              captchaToken ?? undefined
+            )
           : null;
         const localSession = await getGroupSessionByPayloadId(
           pendingPayload.sessionId
@@ -447,6 +466,12 @@ export default function GroupSessionPreview() {
                 This display name is shared with people in this session.
               </p>
             </div>
+            {isSupabaseConfigured && (
+              <TurnstileChallenge
+                action="join_group_session"
+                onTokenChange={setCaptchaToken}
+              />
+            )}
             <Button
               onClick={confirmJoinSession}
               className="w-full"

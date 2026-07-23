@@ -118,12 +118,13 @@ async function getCloudSessionById(
 }
 
 export async function syncGroupSessionToCloud(
-  payload: GroupSessionPayload
+  payload: GroupSessionPayload,
+  captchaToken?: string
 ): Promise<CloudGroupSession | null> {
   const client = getClient();
   if (!client) return null;
 
-  const user = await ensureAnonymousUser();
+  const user = await ensureAnonymousUser(payload.organizerName, captchaToken);
   if (!user) return null;
 
   const result = await client.rpc(
@@ -151,9 +152,6 @@ export async function getCloudGroupSessionByPayloadId(
   const client = getClient();
   if (!client) return null;
 
-  const user = await ensureAnonymousUser();
-  if (!user) return null;
-
   const result = await client.rpc("get_group_session_by_payload_id", {
     requested_payload_session_id: payloadSessionId,
   });
@@ -171,13 +169,14 @@ export async function getCloudGroupSessionByPayloadId(
 
 export async function joinCloudGroupSession(
   payloadSessionId: string,
-  displayName: string
+  displayName: string,
+  captchaToken?: string
 ): Promise<GroupSession | null> {
   const client = getClient();
   if (!client) return null;
 
   const normalizedName = displayName.trim() || "Anonymous";
-  await saveDisplayName(normalizedName);
+  await saveDisplayName(normalizedName, captchaToken);
   const result = await client.rpc("join_group_session", {
     requested_payload_session_id: payloadSessionId,
     requested_display_name: normalizedName,

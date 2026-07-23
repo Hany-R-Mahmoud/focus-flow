@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { TurnstileChallenge } from "@/components/TurnstileChallenge";
 import {
   Dialog,
   DialogContent,
@@ -25,7 +26,11 @@ import {
 } from "@/lib/groupSession";
 import { formatTime } from "@/lib/time";
 import { getSessionParticipants, addParticipant } from "@/lib/participants";
-import { isSupabaseConfigured, saveDisplayName } from "@/lib/supabase";
+import {
+  isSupabaseConfigured,
+  isTurnstileConfigured,
+  saveDisplayName,
+} from "@/lib/supabase";
 import { joinCloudGroupSession } from "@/lib/cloudGroupSessions";
 import {
   claimActiveGroupSession,
@@ -48,6 +53,7 @@ export default function GroupSessions() {
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -131,14 +137,29 @@ export default function GroupSessions() {
 
     try {
       const name = participantName.trim() || "Anonymous";
+      if (isSupabaseConfigured && !isTurnstileConfigured) {
+        toast.error("Configure Turnstile before joining");
+        releaseActiveGroupSession(activeSessionKey);
+        return;
+      }
+      if (isSupabaseConfigured && !captchaToken) {
+        toast.error("Complete the CAPTCHA before joining");
+        releaseActiveGroupSession(activeSessionKey);
+        return;
+      }
       if (isSupabaseConfigured && joinSession.payloadSessionId) {
-        await joinCloudGroupSession(joinSession.payloadSessionId, name);
+        await joinCloudGroupSession(
+          joinSession.payloadSessionId,
+          name,
+          captchaToken ?? undefined
+        );
       }
       await saveDisplayName(name);
       addParticipant(joinSession.id, name);
       toast.success("You've joined the session!");
       setShowJoinDialog(false);
       setJoinSession(null);
+      setCaptchaToken(null);
       setLocation(`/active-group/${joinSession.id}`);
     } catch (error) {
       releaseActiveGroupSession(activeSessionKey);
@@ -358,6 +379,12 @@ export default function GroupSessions() {
                 This name is stored locally in this browser.
               </p>
             </div>
+            {isSupabaseConfigured && (
+              <TurnstileChallenge
+                action="join_group_session"
+                onTokenChange={setCaptchaToken}
+              />
+            )}
             <Button onClick={confirmJoinSession} className="w-full">
               Join Session
             </Button>

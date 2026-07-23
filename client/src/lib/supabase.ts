@@ -10,11 +10,13 @@ const MAX_DISPLAY_NAME_LENGTH = 50;
 type SupabaseEnv = {
   readonly VITE_SUPABASE_URL?: unknown;
   readonly VITE_SUPABASE_PUBLISHABLE_KEY?: unknown;
+  readonly VITE_TURNSTILE_SITE_KEY?: unknown;
 };
 
 export type SupabaseConfig = {
   readonly url: string;
   readonly publishableKey: string;
+  readonly turnstileSiteKey?: string;
 };
 
 export class SupabaseIntegrationError extends Error {
@@ -24,6 +26,7 @@ export class SupabaseIntegrationError extends Error {
 export function readSupabaseConfig(env: SupabaseEnv): SupabaseConfig | null {
   const url = env.VITE_SUPABASE_URL;
   const publishableKey = env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const turnstileSiteKey = env.VITE_TURNSTILE_SITE_KEY;
 
   if (url === undefined && publishableKey === undefined) return null;
   if (typeof url !== "string" || typeof publishableKey !== "string") {
@@ -55,12 +58,29 @@ export function readSupabaseConfig(env: SupabaseEnv): SupabaseConfig | null {
     );
   }
 
-  return { url, publishableKey };
+  if (
+    turnstileSiteKey !== undefined &&
+    typeof turnstileSiteKey !== "string"
+  ) {
+    throw new SupabaseIntegrationError(
+      "VITE_TURNSTILE_SITE_KEY must be a string when provided"
+    );
+  }
+
+  const normalizedTurnstileSiteKey = turnstileSiteKey?.trim();
+  return {
+    url,
+    publishableKey,
+    ...(normalizedTurnstileSiteKey
+      ? { turnstileSiteKey: normalizedTurnstileSiteKey }
+      : {}),
+  };
 }
 
 const config = readSupabaseConfig({
   VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
   VITE_SUPABASE_PUBLISHABLE_KEY: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+  VITE_TURNSTILE_SITE_KEY: import.meta.env.VITE_TURNSTILE_SITE_KEY,
 });
 
 export const supabase: SupabaseClient | null = config
@@ -74,6 +94,8 @@ export const supabase: SupabaseClient | null = config
   : null;
 
 export const isSupabaseConfigured = supabase !== null;
+export const turnstileSiteKey = config?.turnstileSiteKey ?? null;
+export const isTurnstileConfigured = turnstileSiteKey !== null;
 
 export function getStoredDisplayName(): string {
   if (typeof localStorage === "undefined") return "";
@@ -81,7 +103,8 @@ export function getStoredDisplayName(): string {
 }
 
 export async function ensureAnonymousUser(
-  displayName = getStoredDisplayName()
+  displayName = getStoredDisplayName(),
+  captchaToken?: string
 ): Promise<User | null> {
   if (!supabase) return null;
 
@@ -96,8 +119,17 @@ export async function ensureAnonymousUser(
   const metadata = displayName.trim()
     ? { display_name: displayName.trim().slice(0, MAX_DISPLAY_NAME_LENGTH) }
     : undefined;
+  const normalizedCaptchaToken = captchaToken?.trim();
   const result = await supabase.auth.signInAnonymously({
-    options: metadata ? { data: metadata } : undefined,
+    options:
+      metadata || normalizedCaptchaToken
+        ? {
+            ...(metadata ? { data: metadata } : {}),
+            ...(normalizedCaptchaToken
+              ? { captchaToken: normalizedCaptchaToken }
+              : {}),
+          }
+        : undefined,
   });
   if (result.error || !result.data.user) {
     throw new SupabaseIntegrationError("Failed to create an anonymous user", {
@@ -107,7 +139,10 @@ export async function ensureAnonymousUser(
   return result.data.user;
 }
 
-export async function saveDisplayName(name: string): Promise<string> {
+export async function saveDisplayName(
+  name: string,
+  captchaToken?: string
+): Promise<string> {
   const normalized = name.trim();
   if (normalized.length === 0 || normalized.length > MAX_DISPLAY_NAME_LENGTH) {
     throw new SupabaseIntegrationError(
@@ -120,7 +155,7 @@ export async function saveDisplayName(name: string): Promise<string> {
   }
 
   if (supabase) {
-    await ensureAnonymousUser(normalized);
+    await ensureAnonymousUser(normalized, captchaToken);
     const result = await supabase.auth.updateUser({
       data: { display_name: normalized },
     });

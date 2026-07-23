@@ -2,13 +2,17 @@ import { useEffect, useState } from "react";
 import { getSessions, FocusSession, deleteSession } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { formatDate, calculateSessionDuration } from "@/lib/time";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function SessionHistory() {
   const [sessions, setSessions] = useState<FocusSession[]>([]);
-  const [filter, setFilter] = useState<"all" | "completed" | "abandoned">("all");
+  const [filter, setFilter] = useState<"all" | "completed" | "abandoned">(
+    "all"
+  );
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     loadSessions();
@@ -29,22 +33,46 @@ export default function SessionHistory() {
     }
   }
 
-  const filteredSessions = sessions.filter((s) => {
-    if (filter === "all") return true;
-    return s.status === filter;
+  const filteredSessions = sessions.filter(s => {
+    const matchesFilter = filter === "all" || s.status === filter;
+    const normalizedQuery = query.trim().toLowerCase();
+    const matchesQuery =
+      !normalizedQuery ||
+      [s.templateName, s.taskIntention, s.outcome].some(value =>
+        value.toLowerCase().includes(normalizedQuery)
+      );
+    return matchesFilter && matchesQuery;
   });
 
   return (
     <div className="p-6 md:p-8 pb-24 md:pb-8">
-      <h1 className="text-3xl font-bold text-foreground mb-8">Session History</h1>
+      <h1 className="text-3xl font-bold text-foreground mb-8">
+        Session History
+      </h1>
+
+      <div className="mb-4">
+        <label htmlFor="history-search" className="sr-only">
+          Search session history
+        </label>
+        <Input
+          id="history-search"
+          value={query}
+          onChange={event => setQuery(event.target.value)}
+          placeholder="Search templates, intentions, or outcomes"
+        />
+      </div>
 
       <div className="flex gap-2 mb-8">
-        {(["all", "completed", "abandoned"] as const).map((f) => (
+        {(["all", "completed", "abandoned"] as const).map(f => (
           <Button
             key={f}
             variant={filter === f ? "default" : "outline"}
             onClick={() => setFilter(f)}
-            className={filter === f ? "bg-[var(--color-teal)] hover:bg-[var(--color-teal-dark)] text-white" : ""}
+            className={
+              filter === f
+                ? "bg-[var(--color-teal)] hover:bg-[var(--color-teal-dark)] text-white"
+                : ""
+            }
           >
             {f.charAt(0).toUpperCase() + f.slice(1)}
           </Button>
@@ -53,8 +81,11 @@ export default function SessionHistory() {
 
       <div className="space-y-4">
         {filteredSessions.length > 0 ? (
-          filteredSessions.map((session) => (
-            <Card key={session.id} className="p-6 hover:shadow-md transition-shadow">
+          filteredSessions.map(session => (
+            <Card
+              key={session.id}
+              className="p-6 hover:shadow-md transition-shadow"
+            >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
@@ -93,6 +124,7 @@ export default function SessionHistory() {
                     variant="ghost"
                     size="sm"
                     onClick={() => handleDelete(session.id)}
+                    aria-label={`Delete ${session.templateName} session`}
                   >
                     <Trash2 size={16} className="text-destructive" />
                   </Button>

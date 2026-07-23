@@ -26,12 +26,15 @@ The integration is feature-flagged by `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUB
 
 Setup:
 
-1. Enable Anonymous Sign-Ins in the Supabase project.
-2. Run all files in `supabase/migrations/` in filename order.
-3. Copy `.env.example` to `.env.local`, fill the project URL and publishable key, and restart the app.
+1. Enable Anonymous Sign-Ins and CAPTCHA protection in the Supabase project.
+2. Create a Cloudflare Turnstile widget and add its site key to the app environment.
+3. Run all files in `supabase/migrations/` in filename order.
+4. Copy `.env.example` to `.env.local`, fill the project URL, publishable key, and Turnstile site key, then restart the app.
 
-The browser must never receive a service-role key. CAPTCHA/rate limiting should be added before broad public launch because anonymous sign-up can be abused.
-Migration `0005` schedules a daily cleanup for anonymous accounts older than 30 days that have no group-session records. It intentionally retains accounts tied to group sessions so historical collaboration data is not deleted.
+The browser must never receive a service-role key. CAPTCHA and rate limiting are implemented for cloud mode and must be configured before broad public launch because anonymous sign-up can be abused.
+The app passes Turnstile tokens to Supabase anonymous auth. Migration `0005` schedules cleanup for unused anonymous accounts, and migration `0006` limits create/join RPC calls per anonymous user. Accounts tied to group sessions are retained so shared session history is not deleted.
+
+See `SUPABASE_SETUP.md` for the complete operator guide.
 
 ## Verification
 

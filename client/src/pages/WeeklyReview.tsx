@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import { getSessions, getReviews } from "@/lib/db";
 import { Card } from "@/components/ui/card";
-import { getWeekDates, calculateSessionDuration, formatDuration } from "@/lib/time";
+import {
+  getWeekDates,
+  getDateString,
+  calculateSessionDuration,
+  formatDuration,
+} from "@/lib/time";
 
 export default function WeeklyReview() {
   const [weekStats, setWeekStats] = useState({
@@ -19,13 +24,14 @@ export default function WeeklyReview() {
     const weekDates = getWeekDates();
     const sessions = await getSessions();
 
-    const weekSessions = sessions.filter((s) => {
-      const sessionDate = new Date(s.startTime).toISOString().split("T")[0];
+    const weekSessions = sessions.filter(s => {
+      const sessionDate = getDateString(s.startTime);
       return weekDates.includes(sessionDate) && s.status === "completed";
     });
 
     const totalFocusTime = weekSessions.reduce(
-      (acc, s) => acc + calculateSessionDuration(s.startTime, s.endTime, s.pausedTime),
+      (acc, s) =>
+        acc + calculateSessionDuration(s.startTime, s.endTime, s.pausedTime),
       0
     );
 
@@ -35,13 +41,14 @@ export default function WeeklyReview() {
     );
 
     const templateCounts: Record<string, number> = {};
-    weekSessions.forEach((s) => {
-      templateCounts[s.templateName] = (templateCounts[s.templateName] || 0) + 1;
+    weekSessions.forEach(s => {
+      templateCounts[s.templateName] =
+        (templateCounts[s.templateName] || 0) + 1;
     });
 
-    const topTemplate = Object.entries(templateCounts).sort(
-      ([, a], [, b]) => b - a
-    )[0]?.[0] || "None";
+    const topTemplate =
+      Object.entries(templateCounts).sort(([, a], [, b]) => b - a)[0]?.[0] ||
+      "None";
 
     setWeekStats({
       totalSessions: weekSessions.length,

@@ -24,6 +24,20 @@ describe("Supabase configuration", () => {
       publishableKey: "sb_publishable_test",
     });
   });
+
+  it("keeps the Turnstile site key public and trims it", () => {
+    expect(
+      readSupabaseConfig({
+        VITE_SUPABASE_URL: "https://example.supabase.co",
+        VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_test",
+        VITE_TURNSTILE_SITE_KEY: "  site-key  ",
+      })
+    ).toEqual({
+      url: "https://example.supabase.co",
+      publishableKey: "sb_publishable_test",
+      turnstileSiteKey: "site-key",
+    });
+  });
 });
 
 describe("cloud group-session creation", () => {

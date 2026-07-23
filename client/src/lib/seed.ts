@@ -3,12 +3,9 @@
  * Provides realistic sample data for demonstration and testing
  */
 
-import {
-  SessionTemplate,
-  FocusSession,
-  DailyReview,
-} from "./db";
-import { GroupSession } from "./db";
+import type { SessionTemplate, FocusSession, DailyReview } from "./db";
+import type { GroupSession } from "./db";
+import { getDateString } from "./time";
 
 export function generateSeedData() {
   // Session templates
@@ -139,18 +136,20 @@ export function generateSeedData() {
   const reviews: DailyReview[] = [
     {
       id: "review_1",
-      date: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      date: getDateString(now - 2 * 24 * 60 * 60 * 1000),
       sessionsCompleted: 1,
       totalFocusTime: 90,
-      notes: "Good focus today, minimal distractions. Need to work on consistency.",
+      notes:
+        "Good focus today, minimal distractions. Need to work on consistency.",
       createdAt: now - 2 * 24 * 60 * 60 * 1000,
     },
     {
       id: "review_2",
-      date: new Date(now - 1 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      date: getDateString(now - 1 * 24 * 60 * 60 * 1000),
       sessionsCompleted: 2,
       totalFocusTime: 85,
-      notes: "Productive day. Completed PR review and made progress on learning.",
+      notes:
+        "Productive day. Completed PR review and made progress on learning.",
       createdAt: now - 1 * 24 * 60 * 60 * 1000,
     },
   ];
@@ -161,7 +160,8 @@ export function generateSeedData() {
       id: "group_1",
       payloadVersion: 1,
       title: "Team Focus Friday",
-      sharedObjective: "Weekly team focus session to collaborate on sprint goals",
+      sharedObjective:
+        "Weekly team focus session to collaborate on sprint goals",
       startsAt: new Date(now + 30 * 60 * 1000).toISOString(), // 30 minutes from now
       focusMinutes: 60,
       breakMinutes: 15,

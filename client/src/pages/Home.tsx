@@ -1,14 +1,12 @@
 import {
   ArrowRight,
   Check,
-  CircleDot,
   Clock3,
   Link2,
   Play,
   Sparkles,
   Users,
 } from "lucide-react";
-import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 
 const steps = [
@@ -33,38 +31,35 @@ const steps = [
 ];
 
 export default function Home() {
-  const [, setLocation] = useLocation();
-
   return (
     <div className="min-h-screen overflow-hidden bg-background text-foreground">
       <header className="relative z-10 border-b border-border/70 bg-background/95">
         <div className="container flex h-20 items-center justify-between">
-          <button
-            type="button"
+          <a
+            href="/"
             className="flex items-center gap-3 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-teal)] focus-visible:ring-offset-4"
-            onClick={() => setLocation("/")}
             aria-label="Focus Flow home"
           >
-            <span className="flex size-9 items-center justify-center rounded-xl bg-[var(--color-teal)] text-white shadow-sm">
-              <CircleDot size={21} strokeWidth={2.4} aria-hidden="true" />
+            <span className="flex size-9 items-center justify-center overflow-hidden rounded-xl border border-teal-100 bg-white shadow-sm">
+              <img src="/brand/focus-flow-mark.png" alt="" className="size-9 object-contain" />
             </span>
             <span className="text-lg font-semibold tracking-tight">Focus Flow</span>
-          </button>
+          </a>
 
           <div className="flex items-center gap-3">
             <Button
+              asChild
               variant="ghost"
               className="hidden text-muted-foreground sm:inline-flex"
-              onClick={() => setLocation("/group-sessions")}
             >
-              Group sessions
+              <a href="/group-sessions">Group sessions</a>
             </Button>
             <Button
+              asChild
               variant="outline"
               className="border-[var(--color-teal)]/30 bg-background hover:border-[var(--color-teal)] hover:bg-teal-50"
-              onClick={() => setLocation("/dashboard")}
             >
-              Open dashboard
+              <a href="/dashboard">Open dashboard</a>
             </Button>
           </div>
         </div>
@@ -87,21 +82,25 @@ export default function Home() {
               </p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <Button
+                  asChild
                   size="lg"
                   className="h-12 bg-[var(--color-teal)] px-6 text-white hover:bg-[var(--color-teal-dark)]"
-                  onClick={() => setLocation("/dashboard")}
                 >
+                  <a href="/dashboard">
                   <Play size={18} fill="currentColor" aria-hidden="true" />
                   Start a focus session
+                  </a>
                 </Button>
                 <Button
+                  asChild
                   variant="ghost"
                   size="lg"
                   className="h-12 justify-start px-4 text-foreground hover:bg-teal-50 sm:justify-center"
-                  onClick={() => setLocation("/create-group-session")}
                 >
-                  Create a group session
-                  <ArrowRight size={17} aria-hidden="true" />
+                  <a href="/create-group-session">
+                    Create a group session
+                    <ArrowRight size={17} aria-hidden="true" />
+                  </a>
                 </Button>
               </div>
               <p className="mt-5 text-sm text-muted-foreground">
@@ -133,14 +132,13 @@ export default function Home() {
                         </div>
                       </div>
                     </div>
-                    <button
-                      type="button"
+                    <a
+                      href="/session/new"
                       className="mt-8 flex h-10 w-full items-center justify-center gap-2 rounded-md bg-[var(--color-teal)] text-sm font-medium text-white transition-colors hover:bg-[var(--color-teal-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-teal)] focus-visible:ring-offset-2"
-                      onClick={() => setLocation("/session/new")}
                     >
                       Start timer
                       <ArrowRight size={16} aria-hidden="true" />
-                    </button>
+                    </a>
                   </div>
                   <div className="flex flex-col justify-between gap-6">
                     <div>
@@ -194,13 +192,15 @@ export default function Home() {
               <p className="mt-4 max-w-xl text-base leading-7 text-teal-50/85">Create a session, share the invitation link, and start at the same time. Your intention and interruptions remain private on your device.</p>
             </div>
             <Button
+              asChild
               size="lg"
               variant="secondary"
               className="h-12 w-full bg-white px-6 text-[var(--color-teal-dark)] hover:bg-teal-50 lg:w-auto"
-              onClick={() => setLocation("/create-group-session")}
             >
-              Create a group session
-              <ArrowRight size={17} aria-hidden="true" />
+              <a href="/create-group-session">
+                Create a group session
+                <ArrowRight size={17} aria-hidden="true" />
+              </a>
             </Button>
           </div>
         </section>
@@ -208,16 +208,18 @@ export default function Home() {
         <section className="border-t border-border/70 bg-slate-50/60">
           <div className="container flex flex-col gap-7 py-16 sm:flex-row sm:items-center sm:justify-between sm:py-20">
             <div>
-              <h2 className="text-balance text-3xl font-semibold tracking-[-0.025em]">Make room for one good session.</h2>
+              <h2 className="text-balance text-3xl font-semibold tracking-[-0.025em]">Pause everything else.</h2>
               <p className="mt-3 text-base text-muted-foreground">Your next focused hour can start here.</p>
             </div>
             <Button
+              asChild
               size="lg"
               className="h-12 w-full bg-[var(--color-teal)] px-6 text-white hover:bg-[var(--color-teal-dark)] sm:w-auto"
-              onClick={() => setLocation("/dashboard")}
             >
-              Start a focus session
-              <ArrowRight size={17} aria-hidden="true" />
+              <a href="/dashboard">
+                Start a focus session
+                <ArrowRight size={17} aria-hidden="true" />
+              </a>
             </Button>
           </div>
         </section>
@@ -225,7 +227,7 @@ export default function Home() {
 
       <footer className="container flex flex-col gap-3 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
         <p>Focus Flow, a calmer way to work with your attention.</p>
-        <button type="button" className="w-fit underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-teal)] focus-visible:ring-offset-4" onClick={() => setLocation("/settings")}>Privacy and settings</button>
+        <a href="/settings" className="w-fit underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-teal)] focus-visible:ring-offset-4">Privacy and settings</a>
       </footer>
     </div>
   );

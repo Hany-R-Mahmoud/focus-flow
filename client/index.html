@@ -1,24 +1,48 @@
 <!doctype html>
 <html lang="en">
-
   <head>
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <title>{{project_title}}</title>    
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+      content="width=device-width, initial-scale=1.0, maximum-scale=1"
+    />
+    <title data-seo="title">Focus Flow | A calmer way to work with your attention</title>
+    <meta
+      name="description"
+      data-seo="description"
+      content="Plan focused work, run a session timer, capture distractions, and review your progress with Focus Flow."
+    />
+    <meta name="robots" data-seo="robots" content="index, follow" />
+    <meta property="og:site_name" content="Focus Flow" />
+    <meta property="og:title" data-seo="og:title" content="Focus Flow | A calmer way to work with your attention" />
+    <meta property="og:description" data-seo="og:description" content="Plan focused work, run a session timer, capture distractions, and review your progress with Focus Flow." />
+    <meta property="og:url" data-seo="og:url" content="/" />
+    <meta property="og:type" data-seo="og:type" content="website" />
+    <meta property="og:image" data-seo="og:image" content="/brand/focus-flow-mark.png" />
+    <meta property="og:image:alt" data-seo="og:image:alt" content="Focus Flow mark" />
+    <meta name="twitter:card" data-seo="twitter:card" content="summary" />
+    <meta name="twitter:title" data-seo="twitter:title" content="Focus Flow | A calmer way to work with your attention" />
+    <meta name="twitter:description" data-seo="twitter:description" content="Plan focused work, run a session timer, capture distractions, and review your progress with Focus Flow." />
+    <meta name="twitter:image" data-seo="twitter:image" content="/brand/focus-flow-mark.png" />
+    <script type="application/ld+json" data-seo="jsonld">
+      {"@context":"https://schema.org","@type":"WebSite","name":"Focus Flow","url":"/","description":"Plan focused work, run a session timer, capture distractions, and review your progress with Focus Flow."}
+    </script>
+    <link rel="icon" type="image/png" href="/brand/focus-flow-mark.png" />
+    <link rel="apple-touch-icon" href="/brand/focus-flow-mark.png" />
   </head>
 
   <body>
     <div id="root"></div>
+    <noscript>
+      <main>
+        <h1>Plan a session, then get out of the way.</h1>
+        <p>
+          Focus Flow helps you plan focused work, run a session timer, capture
+          distractions, and review your progress.
+        </p>
+        <a href="/dashboard">Open Focus Flow</a>
+      </main>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
-    <script
-      defer
-      src="%VITE_ANALYTICS_ENDPOINT%/umami"
-      data-website-id="%VITE_ANALYTICS_WEBSITE_ID%"></script>
   </body>
-
 </html>

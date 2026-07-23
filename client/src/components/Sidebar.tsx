@@ -9,7 +9,6 @@ import {
   Play,
   Users,
 } from "lucide-react";
-import { useState } from "react";
 
 interface NavItem {
   label: string;
@@ -19,15 +18,30 @@ interface NavItem {
 
 export default function Sidebar() {
   const [location, setLocation] = useLocation();
-  const [isOpen, setIsOpen] = useState(false);
 
   const navItems: NavItem[] = [
-    { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard size={20} /> },
+    {
+      label: "Dashboard",
+      href: "/dashboard",
+      icon: <LayoutDashboard size={20} />,
+    },
     { label: "Templates", href: "/templates", icon: <Clock size={20} /> },
-    { label: "Group Sessions", href: "/group-sessions", icon: <Users size={20} /> },
+    {
+      label: "Group Sessions",
+      href: "/group-sessions",
+      icon: <Users size={20} />,
+    },
     { label: "History", href: "/history", icon: <History size={20} /> },
-    { label: "Daily Review", href: "/daily-review", icon: <Calendar size={20} /> },
-    { label: "Weekly Review", href: "/weekly-review", icon: <Calendar size={20} /> },
+    {
+      label: "Daily Review",
+      href: "/daily-review",
+      icon: <Calendar size={20} />,
+    },
+    {
+      label: "Weekly Review",
+      href: "/weekly-review",
+      icon: <Calendar size={20} />,
+    },
     { label: "Settings", href: "/settings", icon: <Settings size={20} /> },
   ];
 
@@ -42,25 +56,25 @@ export default function Sidebar() {
       <aside className="hidden md:flex flex-col w-64 bg-card border-r border-border">
         <div className="p-6 border-b border-border">
           <div className="flex items-center gap-3">
-            <img
-              src="/manus-storage/focussessionflow-logo_4f0ab3f0.png"
-              alt="FocusSessionFlow"
-              className="w-8 h-8"
-            />
+            <div className="w-8 h-8 rounded-lg bg-white border border-teal-100 flex items-center justify-center overflow-hidden">
+              <img src="/brand/focus-flow-mark.png" alt="" className="w-8 h-8 object-contain" />
+            </div>
             <h1 className="text-lg font-bold text-foreground">Focus Flow</h1>
           </div>
         </div>
 
         <nav className="flex-1 p-4 space-y-2">
-          {navItems.map((item) => (
+          {navItems.map(item => (
             <Button
+              asChild
               key={item.href}
               variant={isActive(item.href) ? "default" : "ghost"}
               className="w-full justify-start gap-3"
-              onClick={() => setLocation(item.href)}
             >
-              {item.icon}
-              <span>{item.label}</span>
+              <a href={item.href} aria-current={isActive(item.href) ? "page" : undefined}>
+                {item.icon}
+                <span>{item.label}</span>
+              </a>
             </Button>
           ))}
         </nav>
@@ -85,19 +99,22 @@ export default function Sidebar() {
 
       {/* Mobile Bottom Navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border">
-        <nav className="flex justify-around">
-          {navItems.slice(0, 4).map((item) => (
+        <nav className="flex justify-start overflow-x-auto">
+          {navItems.map(item => (
             <Button
+              asChild
               key={item.href}
               variant="ghost"
               size="sm"
-              className="flex-1 rounded-none flex flex-col gap-1 h-16"
-              onClick={() => setLocation(item.href)}
+              className="min-w-20 rounded-none flex flex-col gap-1 h-16"
+              aria-current={isActive(item.href) ? "page" : undefined}
             >
-              <span className={isActive(item.href) ? "text-teal-600" : ""}>
-                {item.icon}
-              </span>
-              <span className="text-xs">{item.label.split(" ")[0]}</span>
+              <a href={item.href}>
+                <span className={isActive(item.href) ? "text-teal-600" : ""}>
+                  {item.icon}
+                </span>
+                <span className="text-xs">{item.label.split(" ")[0]}</span>
+              </a>
             </Button>
           ))}
         </nav>
@@ -109,6 +126,7 @@ export default function Sidebar() {
             className="gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full"
             onClick={() => setLocation("/create-group-session")}
             title="Create Group Session"
+            aria-label="Create Group Session"
           >
             <Users size={18} />
           </Button>
@@ -117,6 +135,7 @@ export default function Sidebar() {
             className="gap-2 bg-teal-600 hover:bg-teal-700 text-white rounded-full"
             onClick={() => setLocation("/session/new")}
             title="Start Session"
+            aria-label="Start Session"
           >
             <Play size={18} />
           </Button>

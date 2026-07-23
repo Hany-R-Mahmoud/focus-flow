@@ -1,4 +1,8 @@
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Participant } from "@/lib/participants";
 
 interface ParticipantAvatarsProps {
@@ -20,7 +24,7 @@ const COLORS = [
 function getAvatarDisplay(participant: Participant) {
   const initials = participant.name
     .split(" ")
-    .map((n) => n[0])
+    .map(n => n[0])
     .join("")
     .toUpperCase()
     .slice(0, 2);
@@ -40,16 +44,18 @@ export default function ParticipantAvatars({
 
   return (
     <div className="flex items-center gap-1">
-      {displayed.map((participant) => {
+      {displayed.map(participant => {
         const { initials, color } = getAvatarDisplay(participant);
         return (
           <Tooltip key={participant.id}>
             <TooltipTrigger asChild>
-              <div
+              <button
+                type="button"
                 className={`w-8 h-8 rounded-full ${color} flex items-center justify-center text-white text-xs font-semibold cursor-pointer hover:ring-2 ring-offset-2 ring-offset-background transition-all`}
+                aria-label={`${participant.name}, joined ${new Date(participant.joinedAt).toLocaleTimeString()}`}
               >
                 {initials}
-              </div>
+              </button>
             </TooltipTrigger>
             <TooltipContent>
               <p>{participant.name}</p>

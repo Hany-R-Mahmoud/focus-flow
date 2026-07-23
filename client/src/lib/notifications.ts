@@ -35,7 +35,6 @@ export function showSessionStartingNotification(sessionTitle: string): void {
 
   new Notification("Focus Session Starting", {
     body: `${sessionTitle} is starting now. Stay focused!`,
-    icon: "/manus-storage/focussessionflow-logo_a1b2c3d4.png",
     tag: "session-starting",
     requireInteraction: false,
   });
@@ -46,13 +45,15 @@ export function showSessionEndingNotification(sessionTitle: string): void {
 
   new Notification("Focus Session Complete", {
     body: `Great work! ${sessionTitle} has ended.`,
-    icon: "/manus-storage/focussessionflow-logo_a1b2c3d4.png",
     tag: "session-ending",
     requireInteraction: false,
   });
 }
 
-export function showGroupSessionStartingNotification(sessionTitle: string, organizerName?: string): void {
+export function showGroupSessionStartingNotification(
+  sessionTitle: string,
+  organizerName?: string
+): void {
   if (!canShowNotifications()) return;
 
   const body = organizerName
@@ -61,7 +62,6 @@ export function showGroupSessionStartingNotification(sessionTitle: string, organ
 
   new Notification("Group Session Starting", {
     body,
-    icon: "/manus-storage/focussessionflow-logo_a1b2c3d4.png",
     tag: "group-session-starting",
     requireInteraction: false,
   });
@@ -72,7 +72,6 @@ export function showGroupSessionEndingNotification(sessionTitle: string): void {
 
   new Notification("Group Session Complete", {
     body: `Group session "${sessionTitle}" has ended. Great collaboration!`,
-    icon: "/manus-storage/focussessionflow-logo_a1b2c3d4.png",
     tag: "group-session-ending",
     requireInteraction: false,
   });
@@ -83,7 +82,6 @@ export function showDistractionLoggedNotification(): void {
 
   new Notification("Distraction Logged", {
     body: "Distraction recorded. Get back to focus!",
-    icon: "/manus-storage/focussessionflow-logo_a1b2c3d4.png",
     tag: "distraction-logged",
     requireInteraction: false,
   });

@@ -6,10 +6,13 @@ interface ActivityTimelineProps {
   compact?: boolean;
 }
 
-export default function ActivityTimeline({ events, compact = false }: ActivityTimelineProps) {
+export default function ActivityTimeline({
+  events,
+  compact = false,
+}: ActivityTimelineProps) {
   if (events.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
+      <div className="text-center py-8 text-muted-foreground" role="status">
         <p className="text-sm">No activity yet</p>
       </div>
     );
@@ -47,12 +50,14 @@ export default function ActivityTimeline({ events, compact = false }: ActivityTi
 
   if (compact) {
     return (
-      <div className="space-y-2">
-        {events.slice(-5).map((event) => (
+      <div className="space-y-2" aria-label="Recent activity">
+        {events.slice(-5).map(event => (
           <div key={event.id} className="flex items-center gap-2 text-xs">
             {getIcon(event.type)}
             <span className="text-muted-foreground">{event.message}</span>
-            <span className="text-xs text-muted-foreground ml-auto">{formatActivityTime(event.timestamp)}</span>
+            <span className="text-xs text-muted-foreground ml-auto">
+              {formatActivityTime(event.timestamp)}
+            </span>
           </div>
         ))}
       </div>
@@ -60,7 +65,12 @@ export default function ActivityTimeline({ events, compact = false }: ActivityTi
   }
 
   return (
-    <div className="space-y-3">
+    <div
+      className="space-y-3"
+      role="log"
+      aria-label="Session activity"
+      aria-live="polite"
+    >
       {events.map((event, index) => (
         <div key={event.id} className="flex gap-4">
           <div className="flex flex-col items-center">
@@ -72,8 +82,12 @@ export default function ActivityTimeline({ events, compact = false }: ActivityTi
             )}
           </div>
           <div className="flex-1 pt-2">
-            <p className="text-sm font-medium text-foreground">{event.message}</p>
-            <p className="text-xs text-muted-foreground mt-1">{formatActivityTime(event.timestamp)}</p>
+            <p className="text-sm font-medium text-foreground">
+              {event.message}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {formatActivityTime(event.timestamp)}
+            </p>
           </div>
         </div>
       ))}

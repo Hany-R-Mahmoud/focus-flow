@@ -51,19 +51,26 @@ An offline-first focus session planner for students, freelancers, and knowledge 
 The app remains local-only when these variables are unset. To enable anonymous cloud identity, authoritative group sessions, join history, and live participant presence:
 
 1. Create a Supabase project and enable Anonymous Sign-Ins.
-2. Run all files in `supabase/migrations/` in filename order in the Supabase SQL Editor.
-3. Copy `.env.example` to `.env.local` and set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
-4. Restart the development server.
+2. Configure Cloudflare Turnstile and enable CAPTCHA protection in Supabase Auth.
+3. Run all files in `supabase/migrations/` in filename order in the Supabase SQL Editor.
+4. Copy `.env.example` to `.env.local` and set the Supabase and Turnstile values.
+5. Restart the development server.
 
 Only the publishable key belongs in the browser. Do not expose a Supabase service-role key.
-The final migration enables a daily 03:00 UTC cleanup for anonymous accounts older than 30 days that have never created or joined a group session. Accounts with group-session records are retained so shared session history is not deleted.
+The security setup guide is in `SUPABASE_SETUP.md`. The final migrations enable daily cleanup for unused anonymous accounts and database-side create/join rate limits.
 
 ### Build for Production
 
 ```bash
+# Set the real canonical domain before starting production.
+export SITE_URL=https://your-production-domain.example
 pnpm build
 pnpm start
 ```
+
+The server generates `/robots.txt`, `/sitemap.xml`, and `/llms.txt`. Only the
+homepage is included in the sitemap; application routes are marked `noindex`.
+Replace the example `SITE_URL` with the deployed HTTPS origin.
 
 ## Usage
 

@@ -5,11 +5,15 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { TurnstileChallenge } from "@/components/TurnstileChallenge";
 import { toast } from "sonner";
 import { createGroupSession } from "@/lib/db";
 import { saveDisplayName } from "@/lib/supabase";
 import { syncGroupSessionToCloud } from "@/lib/cloudGroupSessions";
-import { isSupabaseConfigured } from "@/lib/supabase";
+import {
+  isSupabaseConfigured,
+  isTurnstileConfigured,
+} from "@/lib/supabase";
 import {
   generateSessionId,
   generateGroupSessionLink,
@@ -25,6 +29,7 @@ export default function CreateGroupSession() {
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [payload, setPayload] = useState<GroupSessionPayload | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -119,6 +124,14 @@ export default function CreateGroupSession() {
       }
 
       const link = generateGroupSessionLink(newPayload);
+      if (isSupabaseConfigured && !isTurnstileConfigured) {
+        toast.error("Configure Turnstile before creating a cloud session");
+        return;
+      }
+      if (isSupabaseConfigured && !captchaToken) {
+        toast.error("Complete the CAPTCHA before creating a cloud session");
+        return;
+      }
       const savedSession = await createGroupSession({
         payloadVersion: newPayload.version,
         title: newPayload.title,
@@ -135,9 +148,12 @@ export default function CreateGroupSession() {
 
       try {
         if (newPayload.organizerName) {
-          await saveDisplayName(newPayload.organizerName);
+          await saveDisplayName(
+            newPayload.organizerName,
+            captchaToken ?? undefined
+          );
         }
-        await syncGroupSessionToCloud(newPayload);
+        await syncGroupSessionToCloud(newPayload, captchaToken ?? undefined);
       } catch (cloudError) {
         const message =
           cloudError instanceof Error ? cloudError.message : "Unknown error";
@@ -357,6 +373,12 @@ Join here: ${generatedLink}`;
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Creating..." : "Create Session"}
           </Button>
+          {isSupabaseConfigured && (
+            <TurnstileChallenge
+              action="create_group_session"
+              onTokenChange={setCaptchaToken}
+            />
+          )}
         </Card>
       </form>
 
