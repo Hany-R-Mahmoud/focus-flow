@@ -79,9 +79,9 @@ export default function Home() {
       <main>
         <section className="relative">
           <div className="pointer-events-none absolute -right-32 top-12 size-80 rounded-full bg-teal-50/70 blur-3xl" />
-          <div className="container grid gap-14 py-16 md:grid-cols-[minmax(0,0.9fr)_minmax(420px,1.1fr)] md:items-center md:py-24 lg:gap-20 lg:py-28">
+          <div className="container grid gap-14 py-16 md:py-24 lg:grid-cols-[minmax(0,0.9fr)_minmax(420px,1.1fr)] lg:items-center lg:gap-20 lg:py-28">
             <div className="relative max-w-xl">
-              <p className="mb-6 flex items-center gap-2 text-sm font-medium text-[var(--color-teal-dark)]">
+              <p className="mb-6 flex items-center gap-2 text-sm font-medium text-[var(--color-teal-foreground)]">
                 <span
                   className="size-2 rounded-full bg-[var(--color-teal)]"
                   aria-hidden="true"
@@ -210,7 +210,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="border-y border-border/70 bg-slate-50/60">
+        <section className="border-y border-border/70 bg-muted/40">
           <div className="container py-20 sm:py-24">
             <div className="max-w-2xl">
               <h2 className="text-balance text-3xl font-semibold tracking-[-0.025em] sm:text-4xl">
@@ -276,7 +276,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="border-t border-border/70 bg-slate-50/60">
+        <section className="border-t border-border/70 bg-muted/40">
           <div className="container flex flex-col gap-7 py-16 sm:flex-row sm:items-center sm:justify-between sm:py-20">
             <div>
               <h2 className="text-balance text-3xl font-semibold tracking-[-0.025em]">

@@ -109,7 +109,7 @@ export default function SessionHistory() {
                   )}
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-[var(--color-teal)]">
+                  <p className="text-2xl font-bold text-[var(--color-teal-foreground)]">
                     {calculateSessionDuration(
                       session.startTime,
                       session.endTime,

@@ -15,8 +15,9 @@ FocusSessionFlow is a warm, friendly focus companion: calm enough for deep work,
 | Text/primary     | `--foreground`       | Headings and important values          |
 | Text/secondary   | `--muted-foreground` | Supporting labels and helper text      |
 | Border           | `--border`           | Dividers and control outlines          |
-| Accent           | `--color-teal`       | Primary focus actions and active state |
-| Accent/strong    | `--color-teal-dark`  | Accent hover and emphasis              |
+| Accent/action    | `--color-teal`       | Primary focus action backgrounds       |
+| Accent/strong    | `--color-teal-dark`  | Accent hover backgrounds               |
+| Accent/text      | `--color-teal-foreground` | Accent text and icons across themes |
 | Status/info      | Blue utility tokens  | Invitation and informational panels    |
 | Status/warning   | Amber utility tokens | Attention and paused states            |
 | Status/error     | Destructive tokens   | Errors and destructive actions         |
@@ -40,7 +41,8 @@ FocusSessionFlow is a warm, friendly focus companion: calm enough for deep work,
 | `text-xs`               | Metadata and helper copy            |
 | `font-mono`             | Timer and numeric focus values      |
 
-Font stack: `Geist`, then `system-ui`, sans-serif. Use the existing scale; do not add display fonts for product UI.
+Font stack: self-hosted `Geist Variable`, then `Geist`, `system-ui`, sans-serif.
+Use the existing scale; do not add display fonts for product UI.
 
 ## 4. Spacing & Layout
 

@@ -111,21 +111,21 @@ export default function Sidebar() {
 
       {/* Mobile Bottom Navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border">
-        <nav className="flex justify-start overflow-x-auto">
+        <nav className="grid grid-cols-7">
           {navItems.map(item => (
             <Button
               asChild
               key={item.href}
               variant="ghost"
               size="sm"
-              className="min-w-20 rounded-none flex flex-col gap-1 h-16"
+              className="min-w-0 rounded-none px-1 flex flex-col gap-1 h-16"
               aria-current={isActive(item.href) ? "page" : undefined}
             >
               <a href={item.href}>
                 <span className={isActive(item.href) ? "text-teal-600" : ""}>
                   {item.icon}
                 </span>
-                <span className="text-xs">{item.label.split(" ")[0]}</span>
+                <span className="text-[10px]">{item.label.split(" ")[0]}</span>
               </a>
             </Button>
           ))}

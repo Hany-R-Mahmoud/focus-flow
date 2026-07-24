@@ -233,9 +233,9 @@ export default function ActiveSession() {
         <p className="text-muted-foreground">{template.description}</p>
       </div>
 
-      <div className="p-8 mb-8 text-center bg-gradient-to-br from-[var(--color-teal-light)] to-background rounded-lg border border-border">
+      <div className="p-8 mb-8 text-center bg-gradient-to-br from-[var(--color-teal-light)] dark:from-muted to-background rounded-lg border border-border">
         <div className="mb-6">
-          <div className="text-6xl font-bold text-[var(--color-teal)] font-mono mb-2">
+          <div className="text-6xl font-bold text-[var(--color-teal-foreground)] font-mono mb-2">
             {formatTime(remainingTime)}
           </div>
           <p className="text-sm text-muted-foreground">Remaining</p>
@@ -256,7 +256,7 @@ export default function ActiveSession() {
             }
             className={`gap-2 ${
               isRunning
-                ? "bg-amber-500 hover:bg-amber-600"
+                ? "bg-amber-700 hover:bg-amber-800"
                 : "bg-[var(--color-teal)] hover:bg-[var(--color-teal-dark)]"
             } text-white`}
             onClick={handlePauseResume}
@@ -300,7 +300,7 @@ export default function ActiveSession() {
                 key={d.id}
                 className="text-sm p-3 bg-muted rounded flex items-start gap-3"
               >
-                <span className="text-xs font-semibold text-[var(--color-teal)] uppercase">
+                <span className="text-xs font-semibold text-[var(--color-teal-foreground)] uppercase">
                   {d.category}
                 </span>
                 <span className="text-muted-foreground flex-1">{d.note}</span>
@@ -325,7 +325,7 @@ export default function ActiveSession() {
 
       <div className="flex gap-3">
         <Button
-          className="flex-1 gap-2 bg-green-600 hover:bg-green-700 text-white"
+          className="flex-1 gap-2 bg-green-700 hover:bg-green-800 text-white"
           size="lg"
           onClick={() => setShowOutcomeDialog(true)}
         >
@@ -350,7 +350,7 @@ export default function ActiveSession() {
               />
             </div>
             <Button
-              className="w-full bg-green-600 hover:bg-green-700 text-white"
+              className="w-full bg-green-700 hover:bg-green-800 text-white"
               onClick={handleComplete}
             >
               Finish Session

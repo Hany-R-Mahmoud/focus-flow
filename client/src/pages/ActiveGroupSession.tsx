@@ -381,7 +381,7 @@ export default function ActiveGroupSession() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-muted/60 to-background p-4 flex items-center justify-center">
         <div className="text-center">
           <p className="text-slate-600">Loading session...</p>
         </div>
@@ -391,7 +391,7 @@ export default function ActiveGroupSession() {
 
   if (error || !session) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-muted/60 to-background p-4 flex items-center justify-center">
         <Card className="p-8 max-w-md w-full border-red-200 bg-red-50">
           <div className="flex items-center gap-3 mb-4">
             <AlertCircle className="w-6 h-6 text-red-600" />
@@ -418,7 +418,7 @@ export default function ActiveGroupSession() {
 
   if (isEnded) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-muted/60 to-background p-4">
         <div className="max-w-2xl mx-auto">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-slate-900">
@@ -606,7 +606,7 @@ export default function ActiveGroupSession() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-muted/60 to-background p-4">
       <div className="max-w-2xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-slate-900">{session.title}</h1>

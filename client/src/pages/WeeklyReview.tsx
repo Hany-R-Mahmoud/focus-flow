@@ -68,25 +68,25 @@ export default function WeeklyReview() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-6">
           <p className="text-sm text-muted-foreground mb-1">Sessions</p>
-          <p className="text-3xl font-bold text-[var(--color-teal)]">
+          <p className="text-3xl font-bold text-[var(--color-teal-foreground)]">
             {weekStats.totalSessions}
           </p>
         </Card>
         <Card className="p-6">
           <p className="text-sm text-muted-foreground mb-1">Total Focus</p>
-          <p className="text-3xl font-bold text-[var(--color-teal)]">
+          <p className="text-3xl font-bold text-[var(--color-teal-foreground)]">
             {formatDuration(weekStats.totalFocusTime)}
           </p>
         </Card>
         <Card className="p-6">
           <p className="text-sm text-muted-foreground mb-1">Avg Distractions</p>
-          <p className="text-3xl font-bold text-[var(--color-teal)]">
+          <p className="text-3xl font-bold text-[var(--color-teal-foreground)]">
             {weekStats.avgDistractions}
           </p>
         </Card>
         <Card className="p-6">
           <p className="text-sm text-muted-foreground mb-1">Top Template</p>
-          <p className="text-lg font-bold text-[var(--color-teal)]">
+          <p className="text-lg font-bold text-[var(--color-teal-foreground)]">
             {weekStats.topTemplate}
           </p>
         </Card>

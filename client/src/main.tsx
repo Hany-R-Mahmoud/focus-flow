@@ -1,4 +1,5 @@
 import { Analytics } from "@vercel/analytics/react";
+import "@fontsource-variable/geist/wght.css";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";

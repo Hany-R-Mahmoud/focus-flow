@@ -88,13 +88,13 @@ export default function DailyReview() {
           <p className="text-sm text-muted-foreground mb-1">
             Sessions Completed
           </p>
-          <p className="text-3xl font-bold text-[var(--color-teal)]">
+          <p className="text-3xl font-bold text-[var(--color-teal-foreground)]">
             {todayStats.sessionsCompleted}
           </p>
         </Card>
         <Card className="p-6">
           <p className="text-sm text-muted-foreground mb-1">Total Focus Time</p>
-          <p className="text-3xl font-bold text-[var(--color-teal)]">
+          <p className="text-3xl font-bold text-[var(--color-teal-foreground)]">
             {todayStats.totalFocusTime}m
           </p>
         </Card>

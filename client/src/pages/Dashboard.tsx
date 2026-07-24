@@ -125,12 +125,11 @@ export default function Dashboard() {
     <div className="p-6 md:p-8 pb-24 md:pb-8">
       {/* Hero Section */}
       <div
-        className="rounded-lg mb-8 overflow-hidden"
+        className="h-[300px] rounded-lg mb-8 overflow-hidden"
         style={{
           backgroundImage: "linear-gradient(135deg, #0f766e, #164e63)",
           backgroundSize: "cover",
           backgroundPosition: "center",
-          minHeight: "300px",
         }}
       >
         <div className="bg-black/30 backdrop-blur-sm p-8 h-full flex flex-col justify-center">
@@ -162,7 +161,7 @@ export default function Dashboard() {
                 {formatDuration(stats.todayFocusTime)}
               </p>
             </div>
-            <Clock className="text-[var(--color-teal)]" size={24} />
+            <Clock className="text-[var(--color-teal-foreground)]" size={24} />
           </div>
         </Card>
 
@@ -176,7 +175,7 @@ export default function Dashboard() {
                 {stats.sessionsCompleted}
               </p>
             </div>
-            <Play className="text-[var(--color-teal)]" size={24} />
+            <Play className="text-[var(--color-teal-foreground)]" size={24} />
           </div>
         </Card>
 
@@ -188,7 +187,7 @@ export default function Dashboard() {
                 {formatDuration(stats.weeklyFocusTime)}
               </p>
             </div>
-            <TrendingUp className="text-[var(--color-teal)]" size={24} />
+            <TrendingUp className="text-[var(--color-teal-foreground)]" size={24} />
           </div>
         </Card>
       </div>
@@ -205,7 +204,7 @@ export default function Dashboard() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <Users size={24} className="text-[var(--color-teal)]" />
+              <Users size={24} className="text-[var(--color-teal-foreground)]" />
               Group Sessions
             </h2>
             <Button
@@ -318,7 +317,7 @@ export default function Dashboard() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-[var(--color-teal)]">
+                    <p className="font-semibold text-[var(--color-teal-foreground)]">
                       {calculateSessionDuration(
                         session.startTime,
                         session.endTime,
