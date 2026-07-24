@@ -1,0 +1,133 @@
+- generic [ref=e2]:
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - heading "Focus Flow" [level=1] [ref=e8]
+      - navigation [ref=e9]:
+        - link "Dashboard" [ref=e10] [cursor=pointer]:
+          - /url: /dashboard
+          - img
+          - generic [ref=e11]: Dashboard
+        - link "Templates" [ref=e12] [cursor=pointer]:
+          - /url: /templates
+          - img
+          - generic [ref=e13]: Templates
+        - link "Group Sessions" [ref=e14] [cursor=pointer]:
+          - /url: /group-sessions
+          - img
+          - generic [ref=e15]: Group Sessions
+        - link "History" [ref=e16] [cursor=pointer]:
+          - /url: /history
+          - img
+          - generic [ref=e17]: History
+        - link "Daily Review" [ref=e18] [cursor=pointer]:
+          - /url: /daily-review
+          - img
+          - generic [ref=e19]: Daily Review
+        - link "Weekly Review" [ref=e20] [cursor=pointer]:
+          - /url: /weekly-review
+          - img
+          - generic [ref=e21]: Weekly Review
+        - link "Settings" [ref=e22] [cursor=pointer]:
+          - /url: /settings
+          - img
+          - generic [ref=e23]: Settings
+      - generic [ref=e24]:
+        - generic [ref=e25]:
+          - generic [ref=e26]: Appearance
+          - button "Switch to dark mode" [ref=e27] [cursor=pointer]:
+            - img
+        - button "Create Group Session" [ref=e28] [cursor=pointer]:
+          - img
+          - generic [ref=e29]: Create Group Session
+        - button "Start Session" [ref=e30] [cursor=pointer]:
+          - img
+          - generic [ref=e31]: Start Session
+    - main [ref=e32]:
+      - generic [ref=e33]:
+        - generic [ref=e34]:
+          - heading "Group Sessions" [level=1] [ref=e35]
+          - paragraph [ref=e36]: Coordinated focus sessions with others
+        - generic [ref=e37]:
+          - generic [ref=e38]:
+            - generic [ref=e39]:
+              - generic [ref=e40]:
+                - heading "Study Group - React Patterns" [level=3] [ref=e41]
+                - paragraph [ref=e42]: Learn advanced React patterns together
+              - generic [ref=e43]:
+                - paragraph [ref=e44]: Starting in 1:59:23
+                - generic [ref=e45]:
+                  - img [ref=e46]
+                  - generic [ref=e51]: 1 joined
+            - generic [ref=e52]:
+              - generic [ref=e53]:
+                - paragraph [ref=e54]: Start Time
+                - paragraph [ref=e55]: 7/24/2026, 5:07:12 PM
+              - generic [ref=e56]:
+                - paragraph [ref=e57]: Duration
+                - paragraph [ref=e58]: 90m + 10m break
+            - generic [ref=e59]:
+              - paragraph [ref=e60]: Organizer
+              - paragraph [ref=e61]: Jordan
+            - generic [ref=e62]:
+              - paragraph [ref=e63]: "Participants:"
+              - button "Hany, joined 3:07:41 PM" [ref=e65] [cursor=pointer]: H
+            - generic [ref=e66]:
+              - button "Join Session" [ref=e67] [cursor=pointer]:
+                - img
+                - text: Join Session
+              - button "Save as Template" [ref=e68] [cursor=pointer]:
+                - img
+                - text: Save as Template
+              - button "Delete Study Group - React Patterns" [ref=e69] [cursor=pointer]:
+                - img
+          - generic [ref=e70]:
+            - generic [ref=e71]:
+              - generic [ref=e72]:
+                - heading "Team Focus Friday" [level=3] [ref=e73]
+                - paragraph [ref=e74]: Weekly team focus session to collaborate on sprint goals
+              - paragraph [ref=e76]: Starting in 29:23
+            - generic [ref=e77]:
+              - generic [ref=e78]:
+                - paragraph [ref=e79]: Start Time
+                - paragraph [ref=e80]: 7/24/2026, 3:37:12 PM
+              - generic [ref=e81]:
+                - paragraph [ref=e82]: Duration
+                - paragraph [ref=e83]: 60m + 15m break
+            - generic [ref=e84]:
+              - paragraph [ref=e85]: Organizer
+              - paragraph [ref=e86]: Alex
+            - generic [ref=e87]:
+              - button "Join Session" [ref=e88] [cursor=pointer]:
+                - img
+                - text: Join Session
+              - button "Save as Template" [ref=e89] [cursor=pointer]:
+                - img
+                - text: Save as Template
+              - button "Delete Team Focus Friday" [ref=e90] [cursor=pointer]:
+                - img
+          - generic [ref=e91]:
+            - generic [ref=e92]:
+              - generic [ref=e93]:
+                - heading "Morning Standup Focus" [level=3] [ref=e94]
+                - paragraph [ref=e95]: Start the day with focused work on priority tasks
+              - paragraph [ref=e97]: ended
+            - generic [ref=e98]:
+              - generic [ref=e99]:
+                - paragraph [ref=e100]: Start Time
+                - paragraph [ref=e101]: 7/24/2026, 1:07:12 PM
+              - generic [ref=e102]:
+                - paragraph [ref=e103]: Duration
+                - paragraph [ref=e104]: 45m + 5m break
+            - generic [ref=e105]:
+              - paragraph [ref=e106]: Organizer
+              - paragraph [ref=e107]: Sam
+            - generic [ref=e108]:
+              - button "Save as Template" [ref=e109] [cursor=pointer]:
+                - img
+                - text: Save as Template
+              - button "Delete Morning Standup Focus" [ref=e110] [cursor=pointer]:
+                - img
+        - button "Create New Session" [ref=e111] [cursor=pointer]:
+          - img
+          - text: Create New Session

@@ -1,0 +1,152 @@
+- generic:
+  - generic:
+    - region "Notifications alt+T"
+    - generic:
+      - complementary:
+        - generic:
+          - generic:
+            - heading [level=1]: Focus Flow
+        - navigation:
+          - link:
+            - /url: /dashboard
+            - img
+            - generic: Dashboard
+          - link:
+            - /url: /templates
+            - img
+            - generic: Templates
+          - link:
+            - /url: /group-sessions
+            - img
+            - generic: Group Sessions
+          - link:
+            - /url: /history
+            - img
+            - generic: History
+          - link:
+            - /url: /daily-review
+            - img
+            - generic: Daily Review
+          - link:
+            - /url: /weekly-review
+            - img
+            - generic: Weekly Review
+          - link:
+            - /url: /settings
+            - img
+            - generic: Settings
+        - generic:
+          - generic:
+            - generic: Appearance
+            - button:
+              - img
+          - button:
+            - img
+            - generic: Create Group Session
+          - button:
+            - img
+            - generic: Start Session
+      - main:
+        - generic:
+          - generic:
+            - heading [level=1]: Group Sessions
+            - paragraph: Coordinated focus sessions with others
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - heading [level=3]: Study Group - React Patterns
+                  - paragraph: Learn advanced React patterns together
+                - generic:
+                  - paragraph: Starting in 1:59:10
+                  - generic:
+                    - img
+                    - generic: 1 joined
+              - generic:
+                - generic:
+                  - paragraph: Start Time
+                  - paragraph: 7/24/2026, 5:07:12 PM
+                - generic:
+                  - paragraph: Duration
+                  - paragraph: 90m + 10m break
+              - generic:
+                - paragraph: Organizer
+                - paragraph: Jordan
+              - generic:
+                - paragraph: "Participants:"
+                - generic:
+                  - button: H
+              - generic:
+                - button:
+                  - img
+                  - text: Join Session
+                - button:
+                  - img
+                  - text: Save as Template
+                - button:
+                  - img
+            - generic:
+              - generic:
+                - generic:
+                  - heading [level=3]: Team Focus Friday
+                  - paragraph: Weekly team focus session to collaborate on sprint goals
+                - generic:
+                  - paragraph: Starting in 29:10
+              - generic:
+                - generic:
+                  - paragraph: Start Time
+                  - paragraph: 7/24/2026, 3:37:12 PM
+                - generic:
+                  - paragraph: Duration
+                  - paragraph: 60m + 15m break
+              - generic:
+                - paragraph: Organizer
+                - paragraph: Alex
+              - generic:
+                - button:
+                  - img
+                  - text: Join Session
+                - button:
+                  - img
+                  - text: Save as Template
+                - button:
+                  - img
+            - generic:
+              - generic:
+                - generic:
+                  - heading [level=3]: Morning Standup Focus
+                  - paragraph: Start the day with focused work on priority tasks
+                - generic:
+                  - paragraph: ended
+              - generic:
+                - generic:
+                  - paragraph: Start Time
+                  - paragraph: 7/24/2026, 1:07:12 PM
+                - generic:
+                  - paragraph: Duration
+                  - paragraph: 45m + 5m break
+              - generic:
+                - paragraph: Organizer
+                - paragraph: Sam
+              - generic:
+                - button:
+                  - img
+                  - text: Save as Template
+                - button:
+                  - img
+          - button:
+            - img
+            - text: Create New Session
+  - dialog "Join Study Group - React Patterns" [ref=e113]:
+    - heading "Join Study Group - React Patterns" [level=2] [ref=e115]
+    - generic [ref=e116]:
+      - generic [ref=e117]:
+        - text: Your name
+        - textbox "Your name" [active] [ref=e118]:
+          - /placeholder: e.g., Hany
+        - paragraph [ref=e119]: This name is stored locally in this browser.
+      - button "Join Session" [ref=e120] [cursor=pointer]
+    - paragraph [ref=e121]: Dialog content
+    - button "Close" [ref=e122] [cursor=pointer]:
+      - img
+      - generic [ref=e123]: Close
