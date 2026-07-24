@@ -5,11 +5,13 @@ import {
   updateSession,
   getTemplate,
   getTemplates,
+  getSessions,
   createSession,
   FocusSession,
   SessionTemplate,
 } from "@/lib/db";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -19,7 +21,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Play, Pause, Square, AlertCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  Play,
+  Pause,
+  Square,
+  AlertCircle,
+  Clock,
+} from "lucide-react";
 import { formatTime, getElapsedSessionTime } from "@/lib/time";
 import { toast } from "sonner";
 
@@ -29,6 +38,14 @@ export default function ActiveSession() {
   const [, setLocation] = useLocation();
   const [session, setSession] = useState<FocusSession | null>(null);
   const [template, setTemplate] = useState<SessionTemplate | null>(null);
+  const [templates, setTemplates] = useState<SessionTemplate[]>([]);
+  const [setupTemplateId, setSetupTemplateId] = useState("");
+  const [setupName, setSetupName] = useState("");
+  const [setupDuration, setSetupDuration] = useState(25);
+  const [existingActiveSession, setExistingActiveSession] =
+    useState<FocusSession | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isStarting, setIsStarting] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [showDistractionDialog, setShowDistractionDialog] = useState(false);
@@ -46,28 +63,28 @@ export default function ActiveSession() {
 
       const id = sessionId;
       if (id === "new") {
-        const templates = await getTemplates();
-        if (templates.length === 0) {
+        const [availableTemplates, sessions] = await Promise.all([
+          getTemplates(),
+          getSessions(),
+        ]);
+        if (availableTemplates.length === 0) {
           toast.error("No templates available. Create one first.");
           setLocation("/templates");
           return;
         }
-        const selectedTemplate = templates[0];
-        const newSession = await createSession({
-          templateId: selectedTemplate.id,
-          templateName: selectedTemplate.name,
-          startTime: Date.now(),
-          endTime: null,
-          pausedTime: 0,
-          pausedAt: null,
-          taskIntention: "",
-          outcome: "",
-          distractions: [],
-          status: "active",
-        });
-        setSession(newSession);
-        setTemplate(selectedTemplate);
-        setIsRunning(true);
+        const activeSession = sessions
+          .filter(
+            current =>
+              current.status === "active" || current.status === "paused"
+          )
+          .sort((a, b) => b.createdAt - a.createdAt)[0];
+        const selectedTemplate = availableTemplates[0];
+        setTemplates(availableTemplates);
+        setSetupTemplateId(selectedTemplate.id);
+        setSetupName(selectedTemplate.name);
+        setSetupDuration(selectedTemplate.duration);
+        setExistingActiveSession(activeSession ?? null);
+        setIsLoading(false);
       } else {
         const existingSession = await getSession(id);
         if (!existingSession) {
@@ -96,10 +113,14 @@ export default function ActiveSession() {
         ) {
           setIsRunning(existingSession.status === "active");
         }
+        setIsLoading(false);
       }
     }
 
-    loadSession();
+    loadSession().catch(() => {
+      toast.error("Failed to load session");
+      setIsLoading(false);
+    });
   }, [match, sessionId, setLocation]);
 
   useEffect(() => {
@@ -158,6 +179,66 @@ export default function ActiveSession() {
     }
   }
 
+  async function handleStartSession(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (isStarting) return;
+
+    const selectedTemplate = templates.find(
+      current => current.id === setupTemplateId
+    );
+    if (!selectedTemplate) {
+      toast.error("Choose a session template");
+      return;
+    }
+    if (!setupName.trim()) {
+      toast.error("Session name is required");
+      return;
+    }
+    if (
+      !Number.isInteger(setupDuration) ||
+      setupDuration < 1 ||
+      setupDuration > 240
+    ) {
+      toast.error("Duration must be between 1 and 240 minutes");
+      return;
+    }
+
+    setIsStarting(true);
+    try {
+      const activeSession = (await getSessions())
+        .filter(
+          current => current.status === "active" || current.status === "paused"
+        )
+        .sort((a, b) => b.createdAt - a.createdAt)[0];
+      if (activeSession) {
+        toast.info("You already have a session in progress");
+        setExistingActiveSession(activeSession);
+        return;
+      }
+
+      const newSession = await createSession({
+        templateId: selectedTemplate.id,
+        templateName: setupName.trim(),
+        duration: setupDuration,
+        startTime: Date.now(),
+        endTime: null,
+        pausedTime: 0,
+        pausedAt: null,
+        taskIntention: taskIntention.trim(),
+        outcome: "",
+        distractions: [],
+        status: "active",
+      });
+      setSession(newSession);
+      setTemplate(selectedTemplate);
+      setIsRunning(true);
+    } catch {
+      toast.error("Failed to start session");
+    } finally {
+      setIsStarting(false);
+    }
+  }
+
   async function handleAddDistraction() {
     if (!session) return;
 
@@ -210,7 +291,149 @@ export default function ActiveSession() {
     }
   }
 
-  if (!session || !template) {
+  if (sessionId === "new" && !session) {
+    if (isLoading || !templates.length || !setupTemplateId) {
+      return (
+        <div className="p-6 md:p-8 flex items-center justify-center min-h-screen">
+          <p className="text-muted-foreground">Loading session setup...</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="p-6 md:p-8 pb-24 md:pb-8 max-w-2xl mx-auto">
+        <div className="mb-8">
+          <p className="text-sm font-medium text-[var(--color-teal-foreground)] mb-2">
+            New focus session
+          </p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">
+            Set up your focus time
+          </h1>
+          <p className="text-muted-foreground">
+            Choose the shape of this session before the timer starts.
+          </p>
+        </div>
+
+        {existingActiveSession && (
+          <Card className="mb-6 border-amber-300 bg-amber-50 dark:bg-[var(--surface-warm)] p-5">
+            <div className="flex items-start gap-3">
+              <Clock className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
+              <div className="flex-1">
+                <h2 className="font-semibold text-foreground">
+                  A session is already in progress
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Resume it before starting another session.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() =>
+                    setLocation(`/session/${existingActiveSession.id}`)
+                  }
+                >
+                  Resume {existingActiveSession.templateName}
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        <Card className="p-6">
+          <form onSubmit={handleStartSession} className="space-y-5">
+            <div>
+              <Label htmlFor="setup-template">Template</Label>
+              <select
+                id="setup-template"
+                value={setupTemplateId}
+                onChange={event => {
+                  const nextTemplate = templates.find(
+                    current => current.id === event.target.value
+                  );
+                  setSetupTemplateId(event.target.value);
+                  if (nextTemplate) {
+                    setSetupName(nextTemplate.name);
+                    setSetupDuration(nextTemplate.duration);
+                  }
+                }}
+                className="mt-2 w-full rounded-md border border-border bg-background px-3 py-2 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-teal)]"
+                disabled={Boolean(existingActiveSession)}
+              >
+                {templates.map(current => (
+                  <option key={current.id} value={current.id}>
+                    {current.name} · {current.duration} minutes
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <Label htmlFor="setup-name">Session name</Label>
+              <Input
+                id="setup-name"
+                value={setupName}
+                onChange={event => setSetupName(event.target.value)}
+                maxLength={100}
+                disabled={Boolean(existingActiveSession)}
+                className="mt-2"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="setup-duration">Duration (minutes)</Label>
+              <Input
+                id="setup-duration"
+                type="number"
+                min="1"
+                max="240"
+                value={setupDuration}
+                onChange={event => setSetupDuration(Number(event.target.value))}
+                disabled={Boolean(existingActiveSession)}
+                className="mt-2"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Choose between 1 and 240 minutes.
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="setup-intention">What are you focusing on?</Label>
+              <Textarea
+                id="setup-intention"
+                value={taskIntention}
+                onChange={event => setTaskIntention(event.target.value)}
+                placeholder="Describe your task or goal for this session..."
+                disabled={Boolean(existingActiveSession)}
+                className="mt-2"
+              />
+            </div>
+
+            <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setLocation("/dashboard")}
+              >
+                <ArrowLeft size={18} />
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={Boolean(existingActiveSession) || isStarting}
+                className="gap-2 bg-[var(--color-teal)] text-white hover:bg-[var(--color-teal-dark)]"
+              >
+                <Play size={18} />
+                {isStarting ? "Starting..." : "Start session"}
+              </Button>
+            </div>
+          </form>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isLoading || !session || !template) {
     return (
       <div className="p-6 md:p-8 flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -220,7 +443,7 @@ export default function ActiveSession() {
     );
   }
 
-  const totalDuration = template.duration * 60 * 1000;
+  const totalDuration = (session.duration ?? template.duration) * 60 * 1000;
   const progress = Math.min((elapsedTime / totalDuration) * 100, 100);
   const remainingTime = Math.max(totalDuration - elapsedTime, 0);
 
@@ -228,7 +451,7 @@ export default function ActiveSession() {
     <div className="p-6 md:p-8 pb-24 md:pb-8 max-w-2xl mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground mb-2">
-          {template.name}
+          {session.templateName}
         </h1>
         <p className="text-muted-foreground">{template.description}</p>
       </div>

@@ -33,6 +33,7 @@ export interface FocusSession {
   id: string;
   templateId: string;
   templateName: string;
+  duration?: number;
   startTime: number; // timestamp
   endTime: number | null; // null if not finished
   pausedTime: number; // total paused duration in ms

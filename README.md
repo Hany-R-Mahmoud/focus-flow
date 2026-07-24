@@ -84,11 +84,15 @@ Replace the example `SITE_URL` with the deployed HTTPS origin.
 ### Start a Focus Session
 
 1. Click **Start Session** button (in sidebar or dashboard)
-2. The timer will begin immediately
-3. Enter your task intention in the text field
+2. Choose a template, session name, duration, and task intention
+3. Click **Start session** to begin the timer
 4. Click **Log Distraction** to record any interruptions
 5. Click **Complete Session** when done
 6. Enter your outcome and click **Finish Session**
+
+Only one individual session can be active or paused at a time. If a session is
+already in progress, the setup screen offers a resume action instead of
+creating another session.
 
 ### Create a Group Session
 
@@ -160,7 +164,8 @@ Keep shared details general. Anyone with the invite link can see the session tit
 
 - `id`: Unique identifier
 - `templateId`: Reference to SessionTemplate
-- `templateName`: Template name (cached for convenience)
+- `templateName`: Session name, defaulting to the selected template name
+- `duration`: Configured duration for this run in minutes (optional for older data)
 - `startTime`: Session start timestamp
 - `endTime`: Session end timestamp (null if ongoing)
 - `pausedTime`: Total paused duration in milliseconds
