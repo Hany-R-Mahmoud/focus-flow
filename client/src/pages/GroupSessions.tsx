@@ -33,7 +33,10 @@ import {
   normalizeDisplayName,
   saveDisplayName,
 } from "@/lib/supabase";
-import { joinCloudGroupSession } from "@/lib/cloudGroupSessions";
+import {
+  deleteCloudGroupSession,
+  joinCloudGroupSession,
+} from "@/lib/cloudGroupSessions";
 import {
   claimActiveGroupSession,
   releaseActiveGroupSession,
@@ -86,15 +89,30 @@ export default function GroupSessions() {
     return () => window.clearInterval(interval);
   }, []);
 
-  const handleDeleteSession = async (id: string) => {
-    if (!confirm("Delete this session?")) return;
+  const handleCancelSession = async (session: GroupSession) => {
+    if (
+      session.source !== "created" ||
+      calculateSessionStatus(
+        session.startsAt,
+        session.focusMinutes,
+        session.breakMinutes
+      ) === "ended"
+    ) {
+      return;
+    }
+    if (!confirm("Cancel this group session for everyone?")) return;
 
     try {
-      await deleteGroupSession(id);
-      setSessions(current => current.filter(s => s.id !== id));
-      toast.success("Session deleted");
-    } catch (err) {
-      toast.error("Failed to delete session");
+      if (isSupabaseConfigured && session.payloadSessionId) {
+        await deleteCloudGroupSession(session.payloadSessionId);
+      }
+      await deleteGroupSession(session.id);
+      setSessions(current =>
+        current.filter(current => current.id !== session.id)
+      );
+      toast.success("Group session cancelled");
+    } catch {
+      toast.error("Failed to cancel group session");
     }
   };
 
@@ -345,15 +363,18 @@ export default function GroupSessions() {
                   </DialogContent>
                 </Dialog>
 
-                <Button
-                  onClick={() => handleDeleteSession(session.id)}
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:bg-destructive/10"
-                  aria-label={`Delete ${session.title}`}
-                >
-                  <Trash2 size={18} />
-                </Button>
+                {session.source === "created" && status !== "ended" && (
+                  <Button
+                    onClick={() => handleCancelSession(session)}
+                    variant="ghost"
+                    size="sm"
+                    className="gap-2 text-destructive hover:bg-destructive/10"
+                    aria-label={`Cancel ${session.title}`}
+                  >
+                    <Trash2 size={18} />
+                    <span>Cancel</span>
+                  </Button>
+                )}
               </div>
             </Card>
           );
@@ -377,7 +398,8 @@ export default function GroupSessions() {
                 value={participantName}
                 onChange={event => setParticipantName(event.target.value)}
                 placeholder="e.g., Hany"
-                autoFocus required
+                autoFocus
+                required
                 maxLength={50}
               />
               <p className="text-xs text-muted-foreground mt-1">

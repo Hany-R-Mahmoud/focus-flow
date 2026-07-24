@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { getGroupSession, initDB } from "@/lib/db";
+import { deleteGroupSession, getGroupSession, initDB } from "@/lib/db";
 import {
   calculateSessionStatus,
   calculateTimeRemaining,
@@ -30,7 +30,11 @@ import {
   refreshActiveGroupSession,
   releaseActiveGroupSession,
 } from "@/lib/activeGroupSession";
-import { subscribeToCloudGroupPresence } from "@/lib/cloudGroupSessions";
+import {
+  deleteCloudGroupSession,
+  getCloudGroupSessionByPayloadId,
+  subscribeToCloudGroupPresence,
+} from "@/lib/cloudGroupSessions";
 import {
   getActivityLog,
   readGroupSessionLocalJson,
@@ -261,6 +265,32 @@ export default function ActiveGroupSession() {
     return () => window.clearInterval(interval);
   }, [cloudPresenceActive, session]);
 
+  useEffect(() => {
+    if (!session || !isSupabaseConfigured || !session.payloadSessionId) return;
+
+    let cancelled = false;
+    const checkSession = async () => {
+      try {
+        const cloudSession = await getCloudGroupSessionByPayloadId(
+          session.payloadSessionId as string
+        );
+        if (!cloudSession && !cancelled) {
+          releaseActiveGroupSession(session.payloadSessionId as string);
+          setError("The organizer cancelled this session.");
+          setSession(null);
+        }
+      } catch (error) {
+        console.warn("Unable to check group session status", error);
+      }
+    };
+
+    const interval = window.setInterval(() => void checkSession(), 10_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [session]);
+
   const formatTime = (ms: number): string => {
     const totalSeconds = Math.floor(ms / 1000);
     const hours = Math.floor(totalSeconds / 3600);
@@ -377,6 +407,33 @@ export default function ActiveGroupSession() {
     releaseActiveGroupSession(session.payloadSessionId || session.id);
     toast.success("You left the session");
     setLocation(destination);
+  };
+
+  const handleCancelSession = async () => {
+    if (
+      !session ||
+      session.source !== "created" ||
+      calculateSessionStatus(
+        session.startsAt,
+        session.focusMinutes,
+        session.breakMinutes
+      ) === "ended"
+    ) {
+      return;
+    }
+    if (!confirm("Cancel this group session for everyone?")) return;
+
+    try {
+      if (isSupabaseConfigured && session.payloadSessionId) {
+        await deleteCloudGroupSession(session.payloadSessionId);
+      }
+      await deleteGroupSession(session.id);
+      releaseActiveGroupSession(session.payloadSessionId || session.id);
+      toast.success("Group session cancelled");
+      setLocation("/group-sessions");
+    } catch {
+      toast.error("Failed to cancel group session");
+    }
   };
 
   if (loading) {
@@ -805,6 +862,15 @@ export default function ActiveGroupSession() {
           >
             Back to Sessions
           </Button>
+          {session.source === "created" && (
+            <Button
+              onClick={handleCancelSession}
+              variant="destructive"
+              className="w-full sm:flex-1"
+            >
+              Cancel Group Session
+            </Button>
+          )}
           {status === "in-progress" && (
             <Button
               onClick={() => handleExitSession("/")}
@@ -815,7 +881,7 @@ export default function ActiveGroupSession() {
           )}
           <Button
             onClick={() => handleExitSession()}
-            variant="destructive"
+            variant="outline"
             className="w-full sm:flex-1 gap-2"
           >
             <LogOut className="w-4 h-4" />

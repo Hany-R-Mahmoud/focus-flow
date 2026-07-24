@@ -291,6 +291,40 @@ export default function ActiveSession() {
     }
   }
 
+  async function handleCancel() {
+    if (!session) return;
+    if (session.status !== "active" && session.status !== "paused") {
+      toast.error("This session is already closed");
+      return;
+    }
+    if (
+      !confirm(
+        "Cancel this focus session? Your progress will be kept in history."
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const now = Date.now();
+      const pausedDuration =
+        session.status === "paused" && session.pausedAt
+          ? Math.max(0, now - session.pausedAt)
+          : 0;
+      await updateSession(session.id, {
+        endTime: now,
+        status: "abandoned",
+        pausedTime: session.pausedTime + pausedDuration,
+        pausedAt: null,
+      });
+      setIsRunning(false);
+      toast.success("Session cancelled");
+      setTimeout(() => setLocation("/history"), 1000);
+    } catch {
+      toast.error("Failed to cancel session");
+    }
+  }
+
   if (sessionId === "new" && !session) {
     if (isLoading || !templates.length || !setupTemplateId) {
       return (
@@ -554,6 +588,14 @@ export default function ActiveSession() {
         >
           <Square size={20} />
           Complete Session
+        </Button>
+        <Button
+          variant="destructive"
+          size="lg"
+          onClick={handleCancel}
+          disabled={session.status !== "active" && session.status !== "paused"}
+        >
+          Cancel Session
         </Button>
       </div>
 

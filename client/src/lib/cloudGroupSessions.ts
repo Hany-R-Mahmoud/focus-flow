@@ -168,6 +168,26 @@ export async function getCloudGroupSessionByPayloadId(
   return rows[0] ?? null;
 }
 
+export async function deleteCloudGroupSession(
+  payloadSessionId: string
+): Promise<void> {
+  const client = getClient();
+  if (!client) return;
+
+  const result = await client
+    .from("group_sessions")
+    .delete()
+    .eq("payload_session_id", payloadSessionId);
+  if (result.error) {
+    throw new SupabaseIntegrationError(
+      "Failed to cancel the cloud group session",
+      {
+        cause: result.error,
+      }
+    );
+  }
+}
+
 export async function joinCloudGroupSession(
   payloadSessionId: string,
   displayName: string,
