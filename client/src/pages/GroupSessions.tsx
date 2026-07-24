@@ -27,8 +27,10 @@ import {
 import { formatTime } from "@/lib/time";
 import { getSessionParticipants, addParticipant } from "@/lib/participants";
 import {
+  getGroupJoinErrorMessage,
   isSupabaseConfigured,
   isTurnstileConfigured,
+  normalizeDisplayName,
   saveDisplayName,
 } from "@/lib/supabase";
 import { joinCloudGroupSession } from "@/lib/cloudGroupSessions";
@@ -136,7 +138,7 @@ export default function GroupSessions() {
     }
 
     try {
-      const name = participantName.trim() || "Anonymous";
+      const name = normalizeDisplayName(participantName);
       if (isSupabaseConfigured && !isTurnstileConfigured) {
         toast.error("Configure Turnstile before joining");
         releaseActiveGroupSession(activeSessionKey);
@@ -153,9 +155,10 @@ export default function GroupSessions() {
           name,
           captchaToken ?? undefined
         );
+      } else {
+        await saveDisplayName(name);
+        addParticipant(joinSession.id, name);
       }
-      await saveDisplayName(name);
-      addParticipant(joinSession.id, name);
       toast.success("You've joined the session!");
       setShowJoinDialog(false);
       setJoinSession(null);
@@ -165,7 +168,7 @@ export default function GroupSessions() {
       releaseActiveGroupSession(activeSessionKey);
       const message = error instanceof Error ? error.message : "Unknown error";
       console.error(`Error joining session. ${message}`);
-      toast.error("Failed to join session");
+      toast.error(getGroupJoinErrorMessage(error));
     }
   };
 
@@ -360,7 +363,9 @@ export default function GroupSessions() {
       <Dialog open={showJoinDialog} onOpenChange={setShowJoinDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Join {joinSession?.title}</DialogTitle>
+            <DialogTitle className="pr-8">
+              Join {joinSession?.title}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -372,11 +377,13 @@ export default function GroupSessions() {
                 value={participantName}
                 onChange={event => setParticipantName(event.target.value)}
                 placeholder="e.g., Hany"
-                autoFocus
+                autoFocus required
                 maxLength={50}
               />
               <p className="text-xs text-muted-foreground mt-1">
-                This name is stored locally in this browser.
+                {isSupabaseConfigured
+                  ? "This display name is shared with people in this session."
+                  : "This name is stored locally in this browser."}
               </p>
             </div>
             {isSupabaseConfigured && (

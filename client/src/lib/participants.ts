@@ -1,5 +1,11 @@
 import { nanoid } from "nanoid";
 import { addActivityEvent } from "./activityLog";
+import {
+  DisplayNameRequiredError,
+  DisplayNameTakenError,
+  getDisplayNameKey,
+  normalizeDisplayName,
+} from "./supabase";
 
 export interface Participant {
   id: string;
@@ -15,15 +21,30 @@ export function getParticipantStorageKey(sessionId: string): string {
 }
 
 export function addParticipant(sessionId: string, name: string): Participant {
+  const normalizedName = normalizeDisplayName(name);
+  if (!normalizedName) {
+    throw new DisplayNameRequiredError("Display name is required");
+  }
+
+  const participants = getSessionParticipants(sessionId);
+  if (
+    participants.some(
+      participant =>
+        getDisplayNameKey(participant.name) ===
+        getDisplayNameKey(normalizedName)
+    )
+  ) {
+    throw new DisplayNameTakenError("Display name is already in use");
+  }
+
   const participant: Participant = {
     id: nanoid(),
     sessionId,
-    name: name.trim() || "Anonymous",
+    name: normalizedName,
     joinedAt: new Date().toISOString(),
   };
 
   // Store in localStorage
-  const participants = getSessionParticipants(sessionId);
   participants.push(participant);
   localStorage.setItem(
     getParticipantStorageKey(sessionId),

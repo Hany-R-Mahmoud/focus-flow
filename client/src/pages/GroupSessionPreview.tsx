@@ -20,16 +20,18 @@ import {
 } from "@/lib/db";
 import type { GroupSession } from "@/lib/db";
 import { addParticipant } from "@/lib/participants";
-import { saveDisplayName } from "@/lib/supabase";
+import {
+  getGroupJoinErrorMessage,
+  isSupabaseConfigured,
+  isTurnstileConfigured,
+  normalizeDisplayName,
+  saveDisplayName,
+} from "@/lib/supabase";
 import {
   cloudGroupSessionToLocal,
   getCloudGroupSessionByPayloadId,
   joinCloudGroupSession,
 } from "@/lib/cloudGroupSessions";
-import {
-  isSupabaseConfigured,
-  isTurnstileConfigured,
-} from "@/lib/supabase";
 import {
   claimActiveGroupSession,
   releaseActiveGroupSession,
@@ -216,7 +218,7 @@ export default function GroupSessionPreview() {
     }
 
     try {
-      const name = participantName.trim() || "Anonymous";
+      const name = normalizeDisplayName(participantName);
       let joinedSession = session;
       if (pendingPayload) {
         await initDB();
@@ -261,10 +263,12 @@ export default function GroupSessionPreview() {
                 source: "joined",
                 joinedAt: new Date().toISOString(),
               }));
-        await saveDisplayName(name);
+        if (!isSupabaseConfigured) await saveDisplayName(name);
       }
 
-      addParticipant(joinedSession.id, name);
+      if (!isSupabaseConfigured || !pendingPayload) {
+        addParticipant(joinedSession.id, name);
+      }
       setShowJoinDialog(false);
       setPendingPayload(null);
       toast.success("Session joined!");
@@ -272,7 +276,7 @@ export default function GroupSessionPreview() {
     } catch (error) {
       releaseActiveGroupSession(activeSessionKey);
       console.error("Error joining session:", error);
-      toast.error("Failed to join session");
+      toast.error(getGroupJoinErrorMessage(error));
     } finally {
       setJoining(false);
     }
@@ -444,7 +448,9 @@ export default function GroupSessionPreview() {
       <Dialog open={showJoinDialog} onOpenChange={setShowJoinDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Join {session.title}</DialogTitle>
+            <DialogTitle className="pr-8">
+              Join {session.title}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -459,11 +465,13 @@ export default function GroupSessionPreview() {
                 value={participantName}
                 onChange={event => setParticipantName(event.target.value)}
                 placeholder="e.g., Hany"
-                autoFocus
+                autoFocus required
                 maxLength={50}
               />
               <p className="text-xs text-muted-foreground mt-1">
-                This display name is shared with people in this session.
+                {isSupabaseConfigured
+                  ? "This display name is shared with people in this session."
+                  : "This name is stored locally in this browser."}
               </p>
             </div>
             {isSupabaseConfigured && (

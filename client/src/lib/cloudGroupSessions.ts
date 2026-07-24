@@ -5,6 +5,7 @@ import {
   ensureAnonymousUser,
   getStoredDisplayName,
   isSupabaseConfigured,
+  normalizeDisplayName,
   saveDisplayName,
   supabase,
   SupabaseIntegrationError,
@@ -175,7 +176,7 @@ export async function joinCloudGroupSession(
   const client = getClient();
   if (!client) return null;
 
-  const normalizedName = displayName.trim() || "Anonymous";
+  const normalizedName = normalizeDisplayName(displayName);
   await saveDisplayName(normalizedName, captchaToken);
   const result = await client.rpc("join_group_session", {
     requested_payload_session_id: payloadSessionId,

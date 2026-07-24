@@ -23,6 +23,37 @@ export class SupabaseIntegrationError extends Error {
   readonly name = "SupabaseIntegrationError";
 }
 
+export class DisplayNameRequiredError extends Error {
+  readonly name = "DisplayNameRequiredError";
+}
+
+export class DisplayNameTakenError extends Error {
+  readonly name = "DisplayNameTakenError";
+}
+
+export function normalizeDisplayName(name: string): string {
+  return name.normalize("NFKC").trim();
+}
+
+export function getDisplayNameKey(name: string): string {
+  return normalizeDisplayName(name).toLowerCase();
+}
+
+export function getGroupJoinErrorMessage(error: unknown): string {
+  if (error instanceof DisplayNameRequiredError) return "Enter your name";
+  if (
+    error instanceof DisplayNameTakenError ||
+    (error instanceof SupabaseIntegrationError &&
+      error.cause !== null &&
+      typeof error.cause === "object" &&
+      "code" in error.cause &&
+      error.cause.code === "23505")
+  ) {
+    return "That name is already in use. Choose another.";
+  }
+  return "Failed to join session";
+}
+
 export function readSupabaseConfig(env: SupabaseEnv): SupabaseConfig | null {
   const url = env.VITE_SUPABASE_URL;
   const publishableKey = env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -143,8 +174,11 @@ export async function saveDisplayName(
   name: string,
   captchaToken?: string
 ): Promise<string> {
-  const normalized = name.trim();
-  if (normalized.length === 0 || normalized.length > MAX_DISPLAY_NAME_LENGTH) {
+  const normalized = normalizeDisplayName(name);
+  if (normalized.length === 0) {
+    throw new DisplayNameRequiredError("Display name is required");
+  }
+  if (normalized.length > MAX_DISPLAY_NAME_LENGTH) {
     throw new SupabaseIntegrationError(
       `Display name must be between 1 and ${MAX_DISPLAY_NAME_LENGTH} characters`
     );
