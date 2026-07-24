@@ -8,35 +8,37 @@ FocusSessionFlow is a warm, friendly focus companion: calm enough for deep work,
 
 ### Palette
 
-| Role | Token | Usage |
-|------|-------|-------|
-| Surface | `--background` | Page background |
-| Surface/elevated | `--card` | Cards and focused panels |
-| Text/primary | `--foreground` | Headings and important values |
-| Text/secondary | `--muted-foreground` | Supporting labels and helper text |
-| Border | `--border` | Dividers and control outlines |
-| Accent | `--color-teal` | Primary focus actions and active state |
-| Accent/strong | `--color-teal-dark` | Accent hover and emphasis |
-| Status/info | Blue utility tokens | Invitation and informational panels |
-| Status/warning | Amber utility tokens | Attention and paused states |
-| Status/error | Destructive tokens | Errors and destructive actions |
+| Role             | Token                | Usage                                  |
+| ---------------- | -------------------- | -------------------------------------- |
+| Surface          | `--background`       | Page background                        |
+| Surface/elevated | `--card`             | Cards and focused panels               |
+| Text/primary     | `--foreground`       | Headings and important values          |
+| Text/secondary   | `--muted-foreground` | Supporting labels and helper text      |
+| Border           | `--border`           | Dividers and control outlines          |
+| Accent           | `--color-teal`       | Primary focus actions and active state |
+| Accent/strong    | `--color-teal-dark`  | Accent hover and emphasis              |
+| Status/info      | Blue utility tokens  | Invitation and informational panels    |
+| Status/warning   | Amber utility tokens | Attention and paused states            |
+| Status/error     | Destructive tokens   | Errors and destructive actions         |
 
 ### Rules
 
 - Use semantic Tailwind/CSS tokens already defined in `client/src/index.css`.
 - Accent color is reserved for interactive focus actions and active states.
 - Do not use color alone to communicate an interruption or session state.
+- Dark mode uses the `.dark` token set, persisted under `focusflow_theme`, with
+  the same semantic roles and a minimum 4.5:1 body-text contrast target.
 
 ## 3. Typography
 
-| Level | Usage |
-|-------|-------|
-| `text-3xl font-bold` | Page and session titles |
-| `text-lg font-semibold` | Card and section titles |
-| `text-base` | Primary content |
-| `text-sm` | Supporting information and controls |
-| `text-xs` | Metadata and helper copy |
-| `font-mono` | Timer and numeric focus values |
+| Level                   | Usage                               |
+| ----------------------- | ----------------------------------- |
+| `text-3xl font-bold`    | Page and session titles             |
+| `text-lg font-semibold` | Card and section titles             |
+| `text-base`             | Primary content                     |
+| `text-sm`               | Supporting information and controls |
+| `text-xs`               | Metadata and helper copy            |
+| `font-mono`             | Timer and numeric focus values      |
 
 Font stack: `Geist`, then `system-ui`, sans-serif. Use the existing scale; do not add display fonts for product UI.
 
@@ -87,6 +89,6 @@ Use the existing mixed strategy: cards use semantic borders and restrained eleva
 
 ### Accepted Debt
 
-| Item | Location | Why accepted | Exit |
-|------|----------|--------------|------|
+| Item                           | Location               | Why accepted                                       | Exit                                  |
+| ------------------------------ | ---------------------- | -------------------------------------------------- | ------------------------------------- |
 | Shared live participant roster | Group-session surfaces | Explicitly out of scope for the local-only product | Revisit only if product scope changes |

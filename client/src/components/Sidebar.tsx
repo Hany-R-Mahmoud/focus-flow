@@ -9,6 +9,7 @@ import {
   Play,
   Users,
 } from "lucide-react";
+import ThemeToggle from "./ThemeToggle";
 
 interface NavItem {
   label: string;
@@ -56,8 +57,12 @@ export default function Sidebar() {
       <aside className="hidden md:flex flex-col w-64 bg-card border-r border-border">
         <div className="p-6 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-white border border-teal-100 flex items-center justify-center overflow-hidden">
-              <img src="/brand/focus-flow-mark.png" alt="" className="w-8 h-8 object-contain" />
+            <div className="w-8 h-8 rounded-lg bg-white dark:bg-card border border-teal-100 dark:border-border flex items-center justify-center overflow-hidden">
+              <img
+                src="/brand/focus-flow-mark.png"
+                alt=""
+                className="w-8 h-8 object-contain"
+              />
             </div>
             <h1 className="text-lg font-bold text-foreground">Focus Flow</h1>
           </div>
@@ -71,7 +76,10 @@ export default function Sidebar() {
               variant={isActive(item.href) ? "default" : "ghost"}
               className="w-full justify-start gap-3"
             >
-              <a href={item.href} aria-current={isActive(item.href) ? "page" : undefined}>
+              <a
+                href={item.href}
+                aria-current={isActive(item.href) ? "page" : undefined}
+              >
                 {item.icon}
                 <span>{item.label}</span>
               </a>
@@ -80,6 +88,10 @@ export default function Sidebar() {
         </nav>
 
         <div className="p-4 space-y-2 border-t border-border">
+          <div className="flex items-center justify-between gap-3 px-1">
+            <span className="text-sm text-muted-foreground">Appearance</span>
+            <ThemeToggle />
+          </div>
           <Button
             className="w-full gap-2 bg-blue-600 hover:bg-blue-700 text-white"
             onClick={() => setLocation("/create-group-session")}
@@ -118,6 +130,10 @@ export default function Sidebar() {
             </Button>
           ))}
         </nav>
+
+        <div className="absolute right-3 bottom-44">
+          <ThemeToggle />
+        </div>
 
         {/* Mobile floating action buttons */}
         <div className="fixed bottom-20 right-4 flex flex-col gap-2">
