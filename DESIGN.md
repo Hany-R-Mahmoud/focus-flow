@@ -20,6 +20,8 @@ FocusSessionFlow is a warm, friendly focus companion: calm enough for deep work,
 | Status/info      | Blue utility tokens  | Invitation and informational panels    |
 | Status/warning   | Amber utility tokens | Attention and paused states            |
 | Status/error     | Destructive tokens   | Errors and destructive actions         |
+| Dark surface     | `--surface-soft`     | Warm secondary sections and work wells |
+| Dark focus       | `--surface-accent`   | Restrained focus emphasis              |
 
 ### Rules
 
@@ -28,6 +30,11 @@ FocusSessionFlow is a warm, friendly focus companion: calm enough for deep work,
 - Do not use color alone to communicate an interruption or session state.
 - Dark mode uses the `.dark` token set, persisted under `focusflow_theme`, with
   the same semantic roles and a minimum 4.5:1 body-text contrast target.
+- Dark direction: Warm Desk Lamp. Use warm charcoal canvas, warm-gray panels,
+  ivory text, and muted teal only for focus actions/current state.
+- Dark semantic surfaces: `--surface-soft`, `--surface-accent`,
+  `--surface-info`, and `--surface-warm`; do not use decorative glow or raw
+  light-theme opacity washes.
 
 ## 3. Typography
 
@@ -75,7 +82,9 @@ Use the existing 4px spacing rhythm through Tailwind utilities. Group-session pa
 
 ## 7. Depth & Surface
 
-Use the existing mixed strategy: cards use semantic borders and restrained elevation/tonal contrast. Avoid adding new gradients or decorative surfaces to the active-session flow.
+Use semantic borders and restrained elevation/tonal contrast. Warm dark mode
+uses no decorative glow or gradient hero; depth comes from surface steps and
+spacing.
 
 ## 8. Accessibility Constraints & Accepted Debt
 

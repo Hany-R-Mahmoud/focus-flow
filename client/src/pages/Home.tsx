@@ -16,21 +16,21 @@ const steps = [
     title: "Name what matters",
     description:
       "Start with a clear intention so your attention has somewhere to land.",
-    tone: "bg-amber-50 text-amber-700",
+    tone: "bg-[var(--surface-warm)] text-amber-700",
   },
   {
     icon: Clock3,
     title: "Stay with the work",
     description:
       "Run a focused timer and capture distractions without leaving your session.",
-    tone: "bg-teal-50 text-teal-700",
+    tone: "bg-[var(--surface-accent)] text-teal-700",
   },
   {
     icon: Check,
     title: "See what happened",
     description:
       "Review your time, interruptions, and patterns while they are still useful.",
-    tone: "bg-sky-50 text-sky-700",
+    tone: "bg-[var(--surface-info)] text-sky-700",
   },
 ];
 
@@ -68,7 +68,7 @@ export default function Home() {
             <Button
               asChild
               variant="outline"
-              className="border-[var(--color-teal)]/30 bg-background hover:border-[var(--color-teal)] hover:bg-teal-50"
+              className="border-[var(--color-teal)]/30 bg-background hover:border-[var(--color-teal)] hover:bg-[var(--surface-accent)]"
             >
               <a href="/dashboard">Open dashboard</a>
             </Button>
@@ -78,7 +78,6 @@ export default function Home() {
 
       <main>
         <section className="relative">
-          <div className="pointer-events-none absolute -right-32 top-12 size-80 rounded-full bg-teal-50/70 blur-3xl" />
           <div className="container grid gap-14 py-16 md:grid-cols-[minmax(0,0.9fr)_minmax(420px,1.1fr)] md:items-center md:py-24 lg:gap-20 lg:py-28">
             <div className="relative max-w-xl">
               <p className="mb-6 flex items-center gap-2 text-sm font-medium text-[var(--color-teal-dark)]">
@@ -111,7 +110,7 @@ export default function Home() {
                   asChild
                   variant="ghost"
                   size="lg"
-                  className="h-12 justify-start px-4 text-foreground hover:bg-teal-50 sm:justify-center"
+                  className="h-12 justify-start px-4 text-foreground hover:bg-[var(--surface-accent)] sm:justify-center"
                 >
                   <a href="/create-group-session">
                     Create a group session
@@ -126,10 +125,10 @@ export default function Home() {
 
             <div className="relative mx-auto w-full max-w-2xl">
               <div
-                className="absolute -inset-4 rounded-[2rem] bg-teal-50/60"
+                className="absolute -inset-3 rounded-[2rem] bg-[var(--surface-accent)]"
                 aria-hidden="true"
               />
-              <div className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-[0_18px_50px_-28px_rgba(15,118,110,0.5)]">
+              <div className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
                 <div className="flex items-center justify-between border-b border-border px-5 py-4 sm:px-7">
                   <div>
                     <p className="text-sm font-semibold">Your next session</p>
@@ -137,12 +136,12 @@ export default function Home() {
                       Tuesday, 10:30 AM
                     </p>
                   </div>
-                  <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-medium text-teal-700">
+                  <span className="rounded-full bg-[var(--surface-accent)] px-3 py-1 text-xs font-medium text-teal-700">
                     Ready
                   </span>
                 </div>
                 <div className="grid gap-6 p-5 sm:grid-cols-[1fr_0.9fr] sm:p-7">
-                  <div className="rounded-xl bg-slate-50 p-5">
+                  <div className="rounded-xl bg-[var(--surface-soft)] p-5">
                     <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
                       <span>Deep work</span>
                       <span>25 min</span>
@@ -178,7 +177,7 @@ export default function Home() {
                     </div>
                     <div className="space-y-3">
                       <div className="flex items-start gap-3 rounded-lg border border-border bg-background p-3">
-                        <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md bg-amber-50 text-amber-700">
+                        <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md bg-[var(--surface-warm)] text-amber-700">
                           <Sparkles size={15} aria-hidden="true" />
                         </span>
                         <div>
@@ -189,7 +188,7 @@ export default function Home() {
                         </div>
                       </div>
                       <div className="flex items-start gap-3 rounded-lg border border-border bg-background p-3">
-                        <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md bg-sky-50 text-sky-700">
+                        <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md bg-[var(--surface-info)] text-sky-700">
                           <Link2 size={15} aria-hidden="true" />
                         </span>
                         <div>
@@ -210,7 +209,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="border-y border-border/70 bg-slate-50/60">
+        <section className="border-y border-border/70 bg-[var(--surface-soft)]">
           <div className="container py-20 sm:py-24">
             <div className="max-w-2xl">
               <h2 className="text-balance text-3xl font-semibold tracking-[-0.025em] sm:text-4xl">
@@ -266,7 +265,7 @@ export default function Home() {
               asChild
               size="lg"
               variant="secondary"
-              className="h-12 w-full bg-white px-6 text-[var(--color-teal-dark)] hover:bg-teal-50 lg:w-auto"
+              className="h-12 w-full bg-[var(--surface-soft)] px-6 text-[var(--color-teal-dark)] hover:bg-[var(--surface-accent)] dark:text-foreground lg:w-auto"
             >
               <a href="/create-group-session">
                 Create a group session
@@ -276,7 +275,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="border-t border-border/70 bg-slate-50/60">
+        <section className="border-t border-border/70 bg-[var(--surface-soft)]">
           <div className="container flex flex-col gap-7 py-16 sm:flex-row sm:items-center sm:justify-between sm:py-20">
             <div>
               <h2 className="text-balance text-3xl font-semibold tracking-[-0.025em]">

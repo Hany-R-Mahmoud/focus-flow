@@ -123,21 +123,12 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 md:p-8 pb-24 md:pb-8">
-      {/* Hero Section */}
-      <div
-        className="rounded-lg mb-8 overflow-hidden"
-        style={{
-          backgroundImage: "linear-gradient(135deg, #0f766e, #164e63)",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          minHeight: "300px",
-        }}
-      >
-        <div className="bg-black/30 backdrop-blur-sm p-8 h-full flex flex-col justify-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">
+      <div className="rounded-2xl mb-8 min-h-60 overflow-hidden border border-border bg-card">
+        <div className="p-8 min-h-60 flex flex-col justify-center">
+          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-2">
             Focus Session Flow
           </h1>
-          <p className="text-lg text-white/90 mb-6">
+          <p className="text-lg text-muted-foreground mb-6">
             Plan your focus. Track your time. Understand your patterns.
           </p>
           <Button

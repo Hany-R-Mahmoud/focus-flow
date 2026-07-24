@@ -82,40 +82,26 @@ function App() {
     };
   }, []);
 
-  if (startupError) {
-    return (
-      <>
-        <SeoMetadata />
-        <div className="min-h-screen p-8 text-center text-destructive">
-          {startupError}
-        </div>
-      </>
-    );
-  }
-
-  if (!isReady) {
-    return (
-      <>
-        <SeoMetadata />
-        <div className="min-h-screen p-8 text-center text-muted-foreground">
-          Preparing your focus space…
-        </div>
-      </>
-    );
-  }
-
   return (
-    <>
+    <ThemeProvider defaultTheme="light" switchable>
       <SeoMetadata />
       <ErrorBoundary>
-        <ThemeProvider defaultTheme="light" switchable>
+        {startupError ? (
+          <div className="min-h-screen p-8 text-center text-destructive">
+            {startupError}
+          </div>
+        ) : !isReady ? (
+          <div className="min-h-screen p-8 text-center text-muted-foreground">
+            Preparing your focus space…
+          </div>
+        ) : (
           <TooltipProvider>
             <Toaster />
             <AppContent />
           </TooltipProvider>
-        </ThemeProvider>
+        )}
       </ErrorBoundary>
-    </>
+    </ThemeProvider>
   );
 }
 

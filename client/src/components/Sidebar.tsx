@@ -88,10 +88,7 @@ export default function Sidebar() {
         </nav>
 
         <div className="p-4 space-y-2 border-t border-border">
-          <div className="flex items-center justify-between gap-3 px-1">
-            <span className="text-sm text-muted-foreground">Appearance</span>
-            <ThemeToggle />
-          </div>
+          <ThemeToggle showLabel />
           <Button
             className="w-full gap-2 bg-blue-600 hover:bg-blue-700 text-white"
             onClick={() => setLocation("/create-group-session")}
@@ -131,15 +128,15 @@ export default function Sidebar() {
           ))}
         </nav>
 
-        <div className="absolute right-3 bottom-44">
-          <ThemeToggle />
+        <div className="absolute right-3 bottom-44 rounded-xl border border-border bg-card/95 p-1 shadow-lg">
+          <ThemeToggle showLabel />
         </div>
 
         {/* Mobile floating action buttons */}
         <div className="fixed bottom-20 right-4 flex flex-col gap-2">
           <Button
-            size="sm"
-            className="gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full"
+            size="icon-lg"
+            className="size-11 gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full"
             onClick={() => setLocation("/create-group-session")}
             title="Create Group Session"
             aria-label="Create Group Session"
@@ -147,8 +144,8 @@ export default function Sidebar() {
             <Users size={18} />
           </Button>
           <Button
-            size="sm"
-            className="gap-2 bg-teal-600 hover:bg-teal-700 text-white rounded-full"
+            size="icon-lg"
+            className="size-11 gap-2 bg-teal-600 hover:bg-teal-700 text-white rounded-full"
             onClick={() => setLocation("/session/new")}
             title="Start Session"
             aria-label="Start Session"
