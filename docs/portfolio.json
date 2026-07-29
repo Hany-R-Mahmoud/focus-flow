@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "slug": "focussessionflow",
+  "title": {
+    "en": "FocusSessionFlow",
+    "ar": "FocusSessionFlow"
+  },
+  "summary": {
+    "en": "An offline-first focus session planner for students, freelancers, and knowledge workers. Plan focused work sessions, track your time, capture distractions, and review patterns—all locally, without requiring an account or internet connection. Coordinate focus sessions with others ",
+    "ar": "An offline-first focus session planner for students, freelancers, and knowledge workers. Plan focused work sessions, track your time, capture distractions, and review patterns—all locally, without requiring an account or internet connection. Coordinate focus sessions with others "
+  },
+  "status": "showcase",
+  "portfolio": true,
+  "category": "Web",
+  "tech_stack": [
+    "Next.js",
+    "Vite",
+    "React",
+    "TypeScript",
+    "Supabase",
+    "Tailwind",
+    "Vitest"
+  ],
+  "features": [
+    {
+      "en": "Session Templates: Create reusable focus session templates (e.g., \"Deep Work 90min\", \"Quick Focus 25min\")",
+      "ar": "Session Templates: Create reusable focus session templates (e.g., \"Deep Work 90min\", \"Quick Focus 25min\")"
+    },
+    {
+      "en": "Active Timer: Start sessions with a countdown timer, pause/resume, and track elapsed time",
+      "ar": "Active Timer: Start sessions with a countdown timer, pause/resume, and track elapsed time"
+    },
+    {
+      "en": "Distraction Capture: Log distractions during sessions (phone, email, social media, thoughts, other)",
+      "ar": "Distraction Capture: Log distractions during sessions (phone, email, social media, thoughts, other)"
+    },
+    {
+      "en": "Task Intention & Outcome: Record what you're focusing on and what you accomplished",
+      "ar": "Task Intention & Outcome: Record what you're focusing on and what you accomplished"
+    },
+    {
+      "en": "Session History: View all completed sessions with details, outcomes, and distraction counts",
+      "ar": "Session History: View all completed sessions with details, outcomes, and distraction counts"
+    },
+    {
+      "en": "Daily Review: Reflect on your focus day with session stats and personal notes",
+      "ar": "Daily Review: Reflect on your focus day with session stats and personal notes"
+    }
+  ],
+  "progress": {
+    "en": "Classified as showcase-ready by Apex Yard; this snapshot reflects the current repository evidence.",
+    "ar": "Classified as showcase-ready by Apex Yard; this snapshot reflects the current repository evidence."
+  },
+  "issues": [
+    {
+      "en": "Unknown / verify — no issue inventory was found in the current repository sources.",
+      "ar": "Unknown / verify — no issue inventory was found in the current repository sources."
+    }
+  ],
+  "suggestions": [
+    {
+      "en": "Add reviewed screenshots and a fuller case study when visual evidence is available.",
+      "ar": "Add reviewed screenshots and a fuller case study when visual evidence is available."
+    }
+  ],
+  "commands": {
+    "install": "pnpm install",
+    "dev": "pnpm run dev",
+    "test": "pnpm run test",
+    "build": "pnpm run build"
+  },
+  "repository": {
+    "branch": "main",
+    "sync": "github",
+    "github": "https://github.com/Hany-R-Mahmoud/focus-flow"
+  },
+  "source": {
+    "workspace": "workspace/focussessionflow",
+    "last_reviewed": "2026-07-29"
+  }
+}
