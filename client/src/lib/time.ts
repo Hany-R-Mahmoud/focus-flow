@@ -1,10 +1,21 @@
+import type { Language } from "@/lib/i18n";
+import { translate } from "@/lib/i18n";
+
 /**
  * Time formatting and calculation utilities for FocusSessionFlow
  */
 
-export function formatDuration(minutes: number): string {
+export function formatDuration(
+  minutes: number,
+  language: Language = "en"
+): string {
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
+
+  if (language === "ar") {
+    if (hours > 0) return `${hours}س ${mins}د`;
+    return `${mins}د`;
+  }
 
   if (hours > 0) {
     return `${hours}h ${mins}m`;
@@ -24,29 +35,35 @@ export function formatTime(ms: number): string {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
-export function formatDate(timestamp: number): string {
+export function formatDate(
+  timestamp: number,
+  language: Language = "en"
+): string {
   const date = new Date(timestamp);
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
 
   if (date.toDateString() === today.toDateString()) {
-    return "Today";
+    return translate(language, "common.today");
   }
   if (date.toDateString() === yesterday.toDateString()) {
-    return "Yesterday";
+    return translate(language, "common.yesterday");
   }
 
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString(language === "ar" ? "ar-EG" : "en-US", {
     month: "short",
     day: "numeric",
     year: date.getFullYear() !== today.getFullYear() ? "numeric" : undefined,
   });
 }
 
-export function formatDateTime(timestamp: number): string {
+export function formatDateTime(
+  timestamp: number,
+  language: Language = "en"
+): string {
   const date = new Date(timestamp);
-  return date.toLocaleString("en-US", {
+  return date.toLocaleString(language === "ar" ? "ar-EG" : "en-US", {
     month: "short",
     day: "numeric",
     hour: "2-digit",

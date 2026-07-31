@@ -12,6 +12,7 @@ import {
 import ThemeToggle from "./ThemeToggle";
 import PwaInstallMenuAction from "./PwaInstallMenuAction";
 import MobileBottomNav from "./MobileBottomNav";
+import { useLocale } from "@/contexts/LocaleContext";
 
 interface NavItem {
   label: string;
@@ -21,31 +22,40 @@ interface NavItem {
 
 export default function Sidebar() {
   const [location, setLocation] = useLocation();
+  const { t } = useLocale();
 
   const navItems: NavItem[] = [
     {
-      label: "Dashboard",
+      label: t("nav.dashboard"),
       href: "/dashboard",
       icon: <LayoutDashboard size={20} />,
     },
-    { label: "Templates", href: "/templates", icon: <Clock size={20} /> },
     {
-      label: "Group Sessions",
+      label: t("nav.templates"),
+      href: "/templates",
+      icon: <Clock size={20} />,
+    },
+    {
+      label: t("nav.groupSessions"),
       href: "/group-sessions",
       icon: <Users size={20} />,
     },
-    { label: "History", href: "/history", icon: <History size={20} /> },
+    { label: t("nav.history"), href: "/history", icon: <History size={20} /> },
     {
-      label: "Daily Review",
+      label: t("nav.dailyReview"),
       href: "/daily-review",
       icon: <Calendar size={20} />,
     },
     {
-      label: "Weekly Review",
+      label: t("nav.weeklyReview"),
       href: "/weekly-review",
       icon: <Calendar size={20} />,
     },
-    { label: "Settings", href: "/settings", icon: <Settings size={20} /> },
+    {
+      label: t("nav.settings"),
+      href: "/settings",
+      icon: <Settings size={20} />,
+    },
   ];
 
   const isActive = (href: string) => {
@@ -97,14 +107,14 @@ export default function Sidebar() {
             onClick={() => setLocation("/create-group-session")}
           >
             <Users size={18} />
-            <span>Create Group Session</span>
+            <span>{t("nav.createGroup")}</span>
           </Button>
           <Button
             className="w-full gap-2 bg-teal-600 hover:bg-teal-700 text-white"
             onClick={() => setLocation("/session/new")}
           >
             <Play size={18} />
-            <span>Start Session</span>
+            <span>{t("nav.startSession")}</span>
           </Button>
         </div>
       </aside>

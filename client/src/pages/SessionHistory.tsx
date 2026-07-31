@@ -3,11 +3,17 @@ import { getSessions, FocusSession, deleteSession } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatDate, calculateSessionDuration } from "@/lib/time";
+import {
+  formatDate,
+  calculateSessionDuration,
+  formatDuration,
+} from "@/lib/time";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useLocale } from "@/contexts/LocaleContext";
 
 export default function SessionHistory() {
+  const { language, t } = useLocale();
   const [sessions, setSessions] = useState<FocusSession[]>([]);
   const [filter, setFilter] = useState<"all" | "completed" | "abandoned">(
     "all"
@@ -47,18 +53,18 @@ export default function SessionHistory() {
   return (
     <div className="p-6 md:p-8 pb-24 md:pb-8">
       <h1 className="text-3xl font-bold text-foreground mb-8">
-        Session History
+        {t("history.title")}
       </h1>
 
       <div className="mb-4">
         <label htmlFor="history-search" className="sr-only">
-          Search session history
+          {t("history.searchLabel")}
         </label>
         <Input
           id="history-search"
           value={query}
           onChange={event => setQuery(event.target.value)}
-          placeholder="Search templates, intentions, or outcomes"
+          placeholder={t("history.searchPlaceholder")}
         />
       </div>
 
@@ -74,7 +80,7 @@ export default function SessionHistory() {
                 : ""
             }
           >
-            {f.charAt(0).toUpperCase() + f.slice(1)}
+            {t(`history.${f}`)}
           </Button>
         ))}
       </div>
@@ -97,25 +103,28 @@ export default function SessionHistory() {
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground mb-2">
-                    {formatDate(session.startTime)}
+                    {formatDate(session.startTime, language)}
                   </p>
                   <p className="text-sm font-semibold text-foreground mb-2">
-                    Task: {session.taskIntention || "No task recorded"}
+                    {t("history.task")}:{" "}
+                    {session.taskIntention || t("history.noTask")}
                   </p>
                   {session.outcome && (
                     <p className="text-sm text-muted-foreground">
-                      Outcome: {session.outcome}
+                      {t("history.outcome")}: {session.outcome}
                     </p>
                   )}
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-bold text-[var(--color-teal-foreground)]">
-                    {calculateSessionDuration(
-                      session.startTime,
-                      session.endTime,
-                      session.pausedTime
+                    {formatDuration(
+                      calculateSessionDuration(
+                        session.startTime,
+                        session.endTime,
+                        session.pausedTime
+                      ),
+                      language
                     )}
-                    m
                   </p>
                   <p className="text-xs text-muted-foreground mb-4">
                     {session.distractions.length} distractions
@@ -124,7 +133,9 @@ export default function SessionHistory() {
                     variant="ghost"
                     size="sm"
                     onClick={() => handleDelete(session.id)}
-                    aria-label={`Delete ${session.templateName} session`}
+                    aria-label={t("history.delete", {
+                      name: session.templateName,
+                    })}
                   >
                     <Trash2 size={16} className="text-destructive" />
                   </Button>
@@ -134,7 +145,7 @@ export default function SessionHistory() {
           ))
         ) : (
           <Card className="p-8 text-center">
-            <p className="text-muted-foreground">No sessions found</p>
+            <p className="text-muted-foreground">{t("history.none")}</p>
           </Card>
         )}
       </div>

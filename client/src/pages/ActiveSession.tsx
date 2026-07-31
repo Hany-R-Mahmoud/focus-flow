@@ -31,11 +31,22 @@ import {
 } from "lucide-react";
 import { formatTime, getElapsedSessionTime } from "@/lib/time";
 import { toast } from "sonner";
+import { useLocale } from "@/contexts/LocaleContext";
+import { loadUserPreferences } from "@/lib/preferences";
+import { useScreenWakeLock } from "@/hooks/useScreenWakeLock";
+import {
+  playCompletionChime,
+  triggerCompletionHaptic,
+} from "@/lib/sessionFeedback";
+import { showSessionEndingNotification } from "@/lib/notifications";
+import { sessionPresets } from "@/lib/sessionPresets";
 
 export default function ActiveSession() {
   const [match, params] = useRoute("/session/:id");
   const sessionId = params?.id;
   const [, setLocation] = useLocation();
+  const { language, t } = useLocale();
+  const [preferences] = useState(loadUserPreferences);
   const [session, setSession] = useState<FocusSession | null>(null);
   const [template, setTemplate] = useState<SessionTemplate | null>(null);
   const [templates, setTemplates] = useState<SessionTemplate[]>([]);
@@ -56,6 +67,12 @@ export default function ActiveSession() {
   const [taskIntention, setTaskIntention] = useState("");
   const [outcome, setOutcome] = useState("");
   const [showOutcomeDialog, setShowOutcomeDialog] = useState(false);
+  const isSessionActive = Boolean(
+    session && (session.status === "active" || session.status === "paused")
+  );
+  const screenWakeLockActive = useScreenWakeLock(
+    preferences.keepScreenAwake && isSessionActive
+  );
 
   useEffect(() => {
     async function loadSession() {
@@ -284,6 +301,11 @@ export default function ActiveSession() {
       setSession(updatedSession);
       setIsRunning(false);
       setShowOutcomeDialog(false);
+      if (preferences.completionSound) playCompletionChime();
+      if (preferences.completionHaptics) triggerCompletionHaptic();
+      if (preferences.personalNotifications) {
+        showSessionEndingNotification(updatedSession.templateName, language);
+      }
       toast.success("Session completed!");
       setTimeout(() => setLocation("/history"), 1000);
     } catch (err) {
@@ -329,7 +351,7 @@ export default function ActiveSession() {
     if (isLoading || !templates.length || !setupTemplateId) {
       return (
         <div className="p-6 md:p-8 flex items-center justify-center min-h-screen">
-          <p className="text-muted-foreground">Loading session setup...</p>
+          <p className="text-muted-foreground">{t("common.loading")}</p>
         </div>
       );
     }
@@ -338,13 +360,13 @@ export default function ActiveSession() {
       <div className="p-6 md:p-8 pb-24 md:pb-8 max-w-2xl mx-auto">
         <div className="mb-8">
           <p className="text-sm font-medium text-[var(--color-teal-foreground)] mb-2">
-            New focus session
+            {t("session.newEyebrow")}
           </p>
           <h1 className="text-3xl font-bold text-foreground mb-2">
-            Set up your focus time
+            {t("session.setupTitle")}
           </h1>
           <p className="text-muted-foreground">
-            Choose the shape of this session before the timer starts.
+            {t("session.setupDescription")}
           </p>
         </div>
 
@@ -354,10 +376,10 @@ export default function ActiveSession() {
               <Clock className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
               <div className="flex-1">
                 <h2 className="font-semibold text-foreground">
-                  A session is already in progress
+                  {t("session.alreadyInProgress")}
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Resume it before starting another session.
+                  {t("session.resumeFirst")}
                 </p>
                 <Button
                   type="button"
@@ -367,7 +389,7 @@ export default function ActiveSession() {
                     setLocation(`/session/${existingActiveSession.id}`)
                   }
                 >
-                  Resume {existingActiveSession.templateName}
+                  {t("session.resume")} {existingActiveSession.templateName}
                 </Button>
               </div>
             </div>
@@ -377,7 +399,7 @@ export default function ActiveSession() {
         <Card className="p-6">
           <form onSubmit={handleStartSession} className="space-y-5">
             <div>
-              <Label htmlFor="setup-template">Template</Label>
+              <Label htmlFor="setup-template">{t("session.template")}</Label>
               <select
                 id="setup-template"
                 value={setupTemplateId}
@@ -396,14 +418,14 @@ export default function ActiveSession() {
               >
                 {templates.map(current => (
                   <option key={current.id} value={current.id}>
-                    {current.name} · {current.duration} minutes
+                    {current.name} · {current.duration} {t("common.minutes")}
                   </option>
                 ))}
               </select>
             </div>
 
             <div>
-              <Label htmlFor="setup-name">Session name</Label>
+              <Label htmlFor="setup-name">{t("session.name")}</Label>
               <Input
                 id="setup-name"
                 value={setupName}
@@ -415,7 +437,7 @@ export default function ActiveSession() {
             </div>
 
             <div>
-              <Label htmlFor="setup-duration">Duration (minutes)</Label>
+              <Label htmlFor="setup-duration">{t("session.duration")}</Label>
               <Input
                 id="setup-duration"
                 type="number"
@@ -427,17 +449,39 @@ export default function ActiveSession() {
                 className="mt-2"
               />
               <p className="mt-1 text-xs text-muted-foreground">
-                Choose between 1 and 240 minutes.
+                {t("session.durationHint")}
               </p>
             </div>
 
             <div>
-              <Label htmlFor="setup-intention">What are you focusing on?</Label>
+              <p className="text-sm font-medium text-foreground">
+                {t("session.quickPresets")}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {sessionPresets.map(preset => (
+                  <Button
+                    key={preset.id}
+                    type="button"
+                    size="sm"
+                    variant={
+                      setupDuration === preset.duration ? "default" : "outline"
+                    }
+                    onClick={() => setSetupDuration(preset.duration)}
+                    disabled={Boolean(existingActiveSession)}
+                  >
+                    {t(preset.labelKey)}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="setup-intention">{t("session.intention")}</Label>
               <Textarea
                 id="setup-intention"
                 value={taskIntention}
                 onChange={event => setTaskIntention(event.target.value)}
-                placeholder="Describe your task or goal for this session..."
+                placeholder={t("session.intentionPlaceholder")}
                 disabled={Boolean(existingActiveSession)}
                 className="mt-2"
               />
@@ -450,7 +494,7 @@ export default function ActiveSession() {
                 onClick={() => setLocation("/dashboard")}
               >
                 <ArrowLeft size={18} />
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 type="submit"
@@ -458,7 +502,7 @@ export default function ActiveSession() {
                 className="gap-2 bg-[var(--color-teal)] text-white hover:bg-[var(--color-teal-dark)]"
               >
                 <Play size={18} />
-                {isStarting ? "Starting..." : "Start session"}
+                {isStarting ? t("common.loading") : t("common.start")}
               </Button>
             </div>
           </form>
@@ -471,7 +515,7 @@ export default function ActiveSession() {
     return (
       <div className="p-6 md:p-8 flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <p className="text-muted-foreground">Loading session...</p>
+          <p className="text-muted-foreground">{t("common.loading")}</p>
         </div>
       </div>
     );
@@ -488,6 +532,14 @@ export default function ActiveSession() {
           {session.templateName}
         </h1>
         <p className="text-muted-foreground">{template.description}</p>
+        {screenWakeLockActive && (
+          <p
+            className="mt-2 text-xs text-[var(--color-teal-foreground)]"
+            role="status"
+          >
+            {t("session.screenAwake")}
+          </p>
+        )}
       </div>
 
       <div className="p-8 mb-8 text-center bg-gradient-to-br from-[var(--color-teal-light)] dark:from-muted to-background rounded-lg border border-border">
@@ -495,7 +547,9 @@ export default function ActiveSession() {
           <div className="text-6xl font-bold text-[var(--color-teal-foreground)] font-mono mb-2">
             {formatTime(remainingTime)}
           </div>
-          <p className="text-sm text-muted-foreground">Remaining</p>
+          <p className="text-sm text-muted-foreground">
+            {t("session.remaining")}
+          </p>
         </div>
 
         <div className="w-full bg-muted rounded-full h-2 mb-6 overflow-hidden">
@@ -519,18 +573,18 @@ export default function ActiveSession() {
             onClick={handlePauseResume}
           >
             {session.status === "completed" ? (
-              "Completed"
+              t("session.completed")
             ) : session.status === "abandoned" ? (
-              "Abandoned"
+              t("session.abandoned")
             ) : isRunning ? (
               <>
                 <Pause size={20} />
-                Pause
+                {t("session.pause")}
               </>
             ) : (
               <>
                 <Play size={20} />
-                Resume
+                {t("session.resumeAction")}
               </>
             )}
           </Button>
@@ -541,7 +595,7 @@ export default function ActiveSession() {
             onClick={() => setShowDistractionDialog(true)}
           >
             <AlertCircle size={20} />
-            Log Distraction
+            {t("session.logDistraction")}
           </Button>
         </div>
       </div>
@@ -549,7 +603,7 @@ export default function ActiveSession() {
       {session.distractions.length > 0 && (
         <div className="p-6 mb-8 bg-card border border-border rounded-lg">
           <h3 className="font-bold text-foreground mb-4">
-            Distractions ({session.distractions.length})
+            {t("session.distractions")} ({session.distractions.length})
           </h3>
           <div className="space-y-2">
             {session.distractions.map(d => (
@@ -569,13 +623,13 @@ export default function ActiveSession() {
 
       <div className="p-6 mb-8 bg-card border border-border rounded-lg">
         <Label htmlFor="intention" className="font-bold mb-2 block">
-          What are you focusing on?
+          {t("session.intention")}
         </Label>
         <Textarea
           id="intention"
           value={taskIntention}
           onChange={e => setTaskIntention(e.target.value)}
-          placeholder="Describe your task or goal for this session..."
+          placeholder={t("session.intentionPlaceholder")}
           className="mb-4"
         />
       </div>
@@ -587,7 +641,7 @@ export default function ActiveSession() {
           onClick={() => setShowOutcomeDialog(true)}
         >
           <Square size={20} />
-          Complete Session
+          {t("session.complete")}
         </Button>
         <Button
           variant="destructive"
@@ -595,30 +649,30 @@ export default function ActiveSession() {
           onClick={handleCancel}
           disabled={session.status !== "active" && session.status !== "paused"}
         >
-          Cancel Session
+          {t("session.cancel")}
         </Button>
       </div>
 
       <Dialog open={showOutcomeDialog} onOpenChange={setShowOutcomeDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Session Outcome</DialogTitle>
+            <DialogTitle>{t("session.outcome")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="outcome">What did you accomplish?</Label>
+              <Label htmlFor="outcome">{t("session.outcomeQuestion")}</Label>
               <Textarea
                 id="outcome"
                 value={outcome}
                 onChange={e => setOutcome(e.target.value)}
-                placeholder="Describe what you completed and any notes..."
+                placeholder={t("session.outcomePlaceholder")}
               />
             </div>
             <Button
               className="w-full bg-green-700 hover:bg-green-800 text-white"
               onClick={handleComplete}
             >
-              Finish Session
+              {t("session.finish")}
             </Button>
           </div>
         </DialogContent>
@@ -630,11 +684,11 @@ export default function ActiveSession() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Log a Distraction</DialogTitle>
+            <DialogTitle>{t("session.logDistraction")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="category">Category</Label>
+              <Label htmlFor="category">{t("session.category")}</Label>
               <select
                 id="category"
                 value={distractionForm.category}
@@ -646,15 +700,15 @@ export default function ActiveSession() {
                 }
                 className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
               >
-                <option value="phone">Phone</option>
-                <option value="email">Email</option>
-                <option value="social">Social Media</option>
-                <option value="thoughts">Wandering Thoughts</option>
-                <option value="other">Other</option>
+                <option value="phone">{t("session.phone")}</option>
+                <option value="email">{t("session.email")}</option>
+                <option value="social">{t("session.social")}</option>
+                <option value="thoughts">{t("session.thoughts")}</option>
+                <option value="other">{t("session.other")}</option>
               </select>
             </div>
             <div>
-              <Label htmlFor="note">Note</Label>
+              <Label htmlFor="note">{t("session.note")}</Label>
               <Input
                 id="note"
                 value={distractionForm.note}
@@ -664,14 +718,14 @@ export default function ActiveSession() {
                     note: e.target.value,
                   })
                 }
-                placeholder="What distracted you?"
+                placeholder={t("session.distractionPlaceholder")}
               />
             </div>
             <Button
               className="w-full bg-[var(--color-teal)] hover:bg-[var(--color-teal-dark)] text-white"
               onClick={handleAddDistraction}
             >
-              Log Distraction
+              {t("session.logDistraction")}
             </Button>
           </div>
         </DialogContent>

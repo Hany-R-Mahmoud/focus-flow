@@ -40,11 +40,16 @@ export function showSessionStartingNotification(sessionTitle: string): void {
   });
 }
 
-export function showSessionEndingNotification(sessionTitle: string): void {
+export function showSessionEndingNotification(
+  sessionTitle: string,
+  language: Language = "en"
+): void {
   if (!canShowNotifications()) return;
 
-  new Notification("Focus Session Complete", {
-    body: `Great work! ${sessionTitle} has ended.`,
+  new Notification(translate(language, "notification.sessionComplete"), {
+    body: translate(language, "notification.sessionCompleteBody", {
+      title: sessionTitle,
+    }),
     tag: "session-ending",
     requireInteraction: false,
   });
@@ -86,3 +91,4 @@ export function showDistractionLoggedNotification(): void {
     requireInteraction: false,
   });
 }
+import { translate, type Language } from "@/lib/i18n";

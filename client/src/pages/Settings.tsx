@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { exportData, importData, clearAllData } from "@/lib/db";
 import type {
   DailyReview,
@@ -12,6 +14,13 @@ import type {
 import { toast } from "sonner";
 import { Download, Upload, Trash2 } from "lucide-react";
 import { requestNotificationPermission } from "@/lib/notifications";
+import { useLocale } from "@/contexts/LocaleContext";
+import {
+  loadUserPreferences,
+  updateUserPreferences,
+  type UserPreferences,
+} from "@/lib/preferences";
+import { canKeepScreenAwake } from "@/lib/wakeLock";
 
 type ImportData = Parameters<typeof importData>[0];
 
@@ -164,6 +173,16 @@ function isImportData(value: unknown): value is ImportData {
 }
 
 export default function Settings() {
+  const { language, setLanguage, t } = useLocale();
+  const [preferences, setPreferences] =
+    useState<UserPreferences>(loadUserPreferences);
+  const wakeLockSupported =
+    typeof navigator !== "undefined" && canKeepScreenAwake();
+
+  function updatePreference(patch: Partial<UserPreferences>) {
+    setPreferences(current => updateUserPreferences({ ...current, ...patch }));
+  }
+
   async function handleExport() {
     try {
       const data = await exportData();
@@ -175,9 +194,9 @@ export default function Settings() {
       a.download = `focussessionflow-backup-${new Date().toISOString().split("T")[0]}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success("Data exported successfully");
+      toast.success(t("toast.exported"));
     } catch (err) {
-      toast.error("Failed to export data");
+      toast.error(t("toast.exportFailed"));
     }
   }
 
@@ -196,9 +215,9 @@ export default function Settings() {
           throw new Error("Invalid backup format");
         }
         await importData(data);
-        toast.success("Data imported successfully");
+        toast.success(t("toast.imported"));
       } catch (err) {
-        toast.error("Failed to import data");
+        toast.error(t("toast.importFailed"));
       } finally {
         input.value = "";
       }
@@ -207,12 +226,12 @@ export default function Settings() {
   }
 
   async function handleClear() {
-    if (confirm("Are you sure? This will delete all data.")) {
+    if (confirm(t("toast.clearConfirm"))) {
       try {
         await clearAllData();
-        toast.success("All data cleared");
+        toast.success(t("toast.cleared"));
       } catch (err) {
-        toast.error("Failed to clear data");
+        toast.error(t("toast.clearFailed"));
       }
     }
   }
@@ -220,60 +239,149 @@ export default function Settings() {
   async function handleEnableNotifications() {
     const enabled = await requestNotificationPermission();
     toast[enabled ? "success" : "error"](
-      enabled ? "Notifications enabled" : "Notifications were not enabled"
+      enabled
+        ? t("toast.notificationsEnabled")
+        : t("toast.notificationsDisabled")
     );
   }
 
   return (
     <div className="p-6 md:p-8 pb-24 md:pb-8 max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold text-foreground mb-8">Settings</h1>
+      <h1 className="text-3xl font-bold text-foreground mb-8">
+        {t("settings.title")}
+      </h1>
 
       <Card className="p-6 mb-6">
         <h2 className="text-xl font-bold text-foreground mb-4">
-          Data Management
+          {t("settings.language")}
+        </h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          {t("settings.languageDescription")}
+        </p>
+        <div
+          className="flex flex-wrap gap-2"
+          role="group"
+          aria-label={t("settings.language")}
+        >
+          {(["en", "ar"] as const).map(option => (
+            <Button
+              key={option}
+              type="button"
+              variant={language === option ? "default" : "outline"}
+              onClick={() => setLanguage(option)}
+            >
+              {option === "en"
+                ? t("settings.languageEnglish")
+                : t("settings.languageArabic")}
+            </Button>
+          ))}
+        </div>
+      </Card>
+
+      <Card className="p-6 mb-6">
+        <h2 className="text-xl font-bold text-foreground mb-4">
+          {t("settings.focusPreferences")}
+        </h2>
+        <div className="space-y-5">
+          {(
+            [
+              [
+                "keepScreenAwake",
+                "settings.wakeLock",
+                "settings.wakeLockDescription",
+              ],
+              [
+                "completionSound",
+                "settings.completionSound",
+                "settings.completionSoundDescription",
+              ],
+              [
+                "completionHaptics",
+                "settings.completionHaptics",
+                "settings.completionHapticsDescription",
+              ],
+              [
+                "personalNotifications",
+                "settings.personalNotifications",
+                "settings.personalNotificationsDescription",
+              ],
+            ] as const
+          ).map(([preference, label, description]) => (
+            <div
+              key={preference}
+              className="flex items-start justify-between gap-4"
+            >
+              <div>
+                <Label htmlFor={`preference-${preference}`}>{t(label)}</Label>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {t(description)}
+                  {preference === "keepScreenAwake" && !wakeLockSupported && (
+                    <span className="mt-1 block">
+                      {t("settings.wakeLockUnsupported")}
+                    </span>
+                  )}
+                </p>
+              </div>
+              <Switch
+                id={`preference-${preference}`}
+                checked={preferences[preference]}
+                onCheckedChange={checked =>
+                  updatePreference({ [preference]: checked })
+                }
+                disabled={
+                  preference === "keepScreenAwake" && !wakeLockSupported
+                }
+                aria-label={t(label)}
+              />
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card className="p-6 mb-6">
+        <h2 className="text-xl font-bold text-foreground mb-4">
+          {t("settings.dataManagement")}
         </h2>
         <div className="space-y-3">
           <div>
-            <Label className="block mb-2">Export Your Data</Label>
+            <Label className="block mb-2">{t("settings.exportTitle")}</Label>
             <p className="text-sm text-muted-foreground mb-3">
-              Download your sessions, templates, reviews, group sessions, and
-              local group activity as a JSON file.
+              {t("settings.exportDescription")}
             </p>
             <Button
               className="gap-2 bg-[var(--color-teal)] hover:bg-[var(--color-teal-dark)] text-white"
               onClick={handleExport}
             >
               <Download size={18} />
-              Export Data
+              {t("settings.export")}
             </Button>
           </div>
 
           <div className="pt-4 border-t border-border">
-            <Label className="block mb-2">Import Data</Label>
+            <Label className="block mb-2">{t("settings.importTitle")}</Label>
             <p className="text-sm text-muted-foreground mb-3">
-              Import previously exported data or data from another device.
+              {t("settings.importDescription")}
             </p>
             <Button
               className="gap-2 bg-[var(--color-teal)] hover:bg-[var(--color-teal-dark)] text-white"
               onClick={handleImport}
             >
               <Upload size={18} />
-              Import Data
+              {t("settings.import")}
             </Button>
           </div>
 
           <div className="pt-4 border-t border-border">
-            <Label className="block mb-2">Clear All Data</Label>
+            <Label className="block mb-2">{t("settings.clearTitle")}</Label>
             <p className="text-sm text-muted-foreground mb-3">
-              Permanently delete all sessions, templates, and reviews. This
-              cannot be undone.
+              {t("settings.clearDescription")}
             </p>
             <Button
               className="gap-2 bg-destructive hover:bg-red-700 text-white"
               onClick={handleClear}
             >
               <Trash2 size={18} />
-              Clear All Data
+              {t("settings.clear")}
             </Button>
           </div>
         </div>
@@ -281,25 +389,25 @@ export default function Settings() {
 
       <Card className="p-6 mb-6">
         <h2 className="text-xl font-bold text-foreground mb-4">
-          Notifications
+          {t("settings.notifications")}
         </h2>
         <p className="text-sm text-muted-foreground mb-3">
-          Get an optional reminder before an upcoming group session. Permission
-          is requested only when you choose to enable it.
+          {t("settings.notificationsDescription")}
         </p>
         <Button onClick={handleEnableNotifications} variant="outline">
-          Enable Notifications
+          {t("settings.enableNotifications")}
         </Button>
       </Card>
 
       <Card className="p-6">
-        <h2 className="text-xl font-bold text-foreground mb-4">About</h2>
+        <h2 className="text-xl font-bold text-foreground mb-4">
+          {t("settings.about")}
+        </h2>
         <p className="text-sm text-muted-foreground mb-2">
           <strong>FocusSessionFlow</strong> v1.0.0
         </p>
         <p className="text-sm text-muted-foreground">
-          An offline-first focus session planner for students, freelancers, and
-          knowledge workers.
+          {t("settings.aboutDescription")}
         </p>
       </Card>
     </div>

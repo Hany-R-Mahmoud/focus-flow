@@ -15,10 +15,13 @@ import {
   getDateString,
   getLocalDayStart,
   calculateSessionDuration,
+  formatDuration,
 } from "@/lib/time";
 import { toast } from "sonner";
+import { useLocale } from "@/contexts/LocaleContext";
 
 export default function DailyReview() {
+  const { language, t } = useLocale();
   const [review, setReview] = useState<DailyReviewType | null>(null);
   const [notes, setNotes] = useState("");
   const [todayStats, setTodayStats] = useState({
@@ -80,42 +83,44 @@ export default function DailyReview() {
   return (
     <div className="p-6 md:p-8 pb-24 md:pb-8 max-w-2xl mx-auto">
       <h1 className="text-3xl font-bold text-foreground mb-8">
-        Today's Review
+        {t("daily.title")}
       </h1>
 
       <div className="grid grid-cols-2 gap-4 mb-8">
         <Card className="p-6">
           <p className="text-sm text-muted-foreground mb-1">
-            Sessions Completed
+            {t("daily.sessionsCompleted")}
           </p>
           <p className="text-3xl font-bold text-[var(--color-teal-foreground)]">
             {todayStats.sessionsCompleted}
           </p>
         </Card>
         <Card className="p-6">
-          <p className="text-sm text-muted-foreground mb-1">Total Focus Time</p>
+          <p className="text-sm text-muted-foreground mb-1">
+            {t("daily.totalFocus")}
+          </p>
           <p className="text-3xl font-bold text-[var(--color-teal-foreground)]">
-            {todayStats.totalFocusTime}m
+            {formatDuration(todayStats.totalFocusTime, language)}
           </p>
         </Card>
       </div>
 
       <Card className="p-6 mb-8">
         <Label htmlFor="notes" className="font-bold mb-2 block">
-          Reflection
+          {t("daily.reflection")}
         </Label>
         <Textarea
           id="notes"
           value={notes}
           onChange={e => setNotes(e.target.value)}
-          placeholder="How was your focus today? What went well? What could improve?"
+          placeholder={t("daily.placeholder")}
           className="mb-4"
         />
         <Button
           className="w-full bg-[var(--color-teal)] hover:bg-[var(--color-teal-dark)] text-white"
           onClick={handleSave}
         >
-          Save Review
+          {t("daily.save")}
         </Button>
       </Card>
     </div>

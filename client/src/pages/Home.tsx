@@ -10,32 +10,32 @@ import {
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import PwaInstallMenuAction from "@/components/PwaInstallMenuAction";
+import { useLocale } from "@/contexts/LocaleContext";
 
 const steps = [
   {
     icon: Sparkles,
-    title: "Name what matters",
-    description:
-      "Start with a clear intention so your attention has somewhere to land.",
+    titleKey: "home.stepName",
+    descriptionKey: "home.stepNameDescription",
     tone: "bg-[var(--surface-warm)] text-amber-700",
   },
   {
     icon: Clock3,
-    title: "Stay with the work",
-    description:
-      "Run a focused timer and capture distractions without leaving your session.",
+    titleKey: "home.stepStay",
+    descriptionKey: "home.stepStayDescription",
     tone: "bg-[var(--surface-accent)] text-teal-700",
   },
   {
     icon: Check,
-    title: "See what happened",
-    description:
-      "Review your time, interruptions, and patterns while they are still useful.",
+    titleKey: "home.stepSee",
+    descriptionKey: "home.stepSeeDescription",
     tone: "bg-[var(--surface-info)] text-sky-700",
   },
 ];
 
 export default function Home() {
+  const { language, languageLabels, setLanguage, t } = useLocale();
+
   return (
     <div className="min-h-screen overflow-hidden bg-background text-foreground">
       <header className="relative z-10 border-b border-border/70 bg-background/95">
@@ -43,7 +43,7 @@ export default function Home() {
           <a
             href="/"
             className="flex items-center gap-3 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-teal)] focus-visible:ring-offset-4"
-            aria-label="Focus Flow home"
+            aria-label={t("home.homeLabel")}
           >
             <span className="flex size-9 items-center justify-center overflow-hidden rounded-xl border border-teal-100 bg-white shadow-sm">
               <img
@@ -59,20 +59,29 @@ export default function Home() {
 
           <div className="flex items-center gap-3">
             <ThemeToggle />
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => setLanguage(language === "en" ? "ar" : "en")}
+              aria-label={languageLabels[language === "en" ? "ar" : "en"]}
+            >
+              {languageLabels[language === "en" ? "ar" : "en"]}
+            </Button>
             <PwaInstallMenuAction compact className="border border-border" />
             <Button
               asChild
               variant="ghost"
               className="hidden text-muted-foreground sm:inline-flex"
             >
-              <a href="/group-sessions">Group sessions</a>
+              <a href="/group-sessions">{t("home.groupSessions")}</a>
             </Button>
             <Button
               asChild
               variant="outline"
               className="border-[var(--color-teal)]/30 bg-background hover:border-[var(--color-teal)] hover:bg-[var(--surface-accent)]"
             >
-              <a href="/dashboard">Open dashboard</a>
+              <a href="/dashboard">{t("home.openDashboard")}</a>
             </Button>
           </div>
         </div>
@@ -87,15 +96,13 @@ export default function Home() {
                   className="size-2 rounded-full bg-[var(--color-teal)]"
                   aria-hidden="true"
                 />
-                A quieter way to make time for what matters
+                {t("home.eyebrow")}
               </p>
               <h1 className="max-w-2xl text-balance text-5xl font-semibold tracking-[-0.035em] text-foreground sm:text-6xl lg:text-7xl">
-                Plan a session, then get out of the way.
+                {t("home.heroTitle")}
               </h1>
               <p className="mt-7 max-w-xl text-pretty text-lg leading-8 text-muted-foreground sm:text-xl">
-                Set an intention, run the timer, capture distractions, and
-                review what happened. Focus Flow keeps the useful parts of a
-                focus practice close at hand.
+                {t("home.heroDescription")}
               </p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <Button
@@ -105,7 +112,7 @@ export default function Home() {
                 >
                   <a href="/dashboard">
                     <Play size={18} fill="currentColor" aria-hidden="true" />
-                    Start a focus session
+                    {t("home.startFocus")}
                   </a>
                 </Button>
                 <Button
@@ -115,13 +122,13 @@ export default function Home() {
                   className="h-12 justify-start px-4 text-foreground hover:bg-[var(--surface-accent)] sm:justify-center"
                 >
                   <a href="/create-group-session">
-                    Create a group session
+                    {t("home.createGroup")}
                     <ArrowRight size={17} aria-hidden="true" />
                   </a>
                 </Button>
               </div>
               <p className="mt-5 text-sm text-muted-foreground">
-                Personal focus notes stay on your device.
+                {t("home.privateNotes")}
               </p>
             </div>
 
@@ -133,13 +140,15 @@ export default function Home() {
               <div className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
                 <div className="flex items-center justify-between border-b border-border px-5 py-4 sm:px-7">
                   <div>
-                    <p className="text-sm font-semibold">Your next session</p>
+                    <p className="text-sm font-semibold">
+                      {t("home.nextSession")}
+                    </p>
                     <p className="mt-1 text-xs text-muted-foreground">
                       Tuesday, 10:30 AM
                     </p>
                   </div>
                   <span className="rounded-full bg-[var(--surface-accent)] px-3 py-1 text-xs font-medium text-teal-700">
-                    Ready
+                    {t("home.ready")}
                   </span>
                 </div>
                 <div className="grid gap-6 p-5 sm:grid-cols-[1fr_0.9fr] sm:p-7">
@@ -155,7 +164,7 @@ export default function Home() {
                             25:00
                           </p>
                           <p className="mt-1 text-xs text-muted-foreground">
-                            until a clear break
+                            {t("home.untilBreak")}
                           </p>
                         </div>
                       </div>
@@ -164,17 +173,17 @@ export default function Home() {
                       href="/session/new"
                       className="mt-8 flex h-10 w-full items-center justify-center gap-2 rounded-md bg-[var(--color-teal)] text-sm font-medium text-white transition-colors hover:bg-[var(--color-teal-dark)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-teal)] focus-visible:ring-offset-2"
                     >
-                      Start timer
+                      {t("home.startTimer")}
                       <ArrowRight size={16} aria-hidden="true" />
                     </a>
                   </div>
                   <div className="flex flex-col justify-between gap-6">
                     <div>
                       <p className="text-sm font-semibold">
-                        A little structure
+                        {t("home.littleStructure")}
                       </p>
                       <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                        Keep the plan visible, let the rest wait.
+                        {t("home.keepPlan")}
                       </p>
                     </div>
                     <div className="space-y-3">
@@ -183,9 +192,11 @@ export default function Home() {
                           <Sparkles size={15} aria-hidden="true" />
                         </span>
                         <div>
-                          <p className="text-xs font-medium">Intention</p>
+                          <p className="text-xs font-medium">
+                            {t("home.intention")}
+                          </p>
                           <p className="mt-1 text-sm text-muted-foreground">
-                            Draft the project brief
+                            {t("home.projectBrief")}
                           </p>
                         </div>
                       </div>
@@ -194,15 +205,17 @@ export default function Home() {
                           <Link2 size={15} aria-hidden="true" />
                         </span>
                         <div>
-                          <p className="text-xs font-medium">Distractions</p>
+                          <p className="text-xs font-medium">
+                            {t("home.distractions")}
+                          </p>
                           <p className="mt-1 text-sm text-muted-foreground">
-                            3 notes captured privately
+                            {t("home.privateNotesCaptured")}
                           </p>
                         </div>
                       </div>
                     </div>
                     <p className="text-xs leading-5 text-muted-foreground">
-                      A representative view of the focus workspace.
+                      {t("home.representative")}
                     </p>
                   </div>
                 </div>
@@ -215,11 +228,10 @@ export default function Home() {
           <div className="container py-20 sm:py-24">
             <div className="max-w-2xl">
               <h2 className="text-balance text-3xl font-semibold tracking-[-0.025em] sm:text-4xl">
-                Your focus, in a simple loop.
+                {t("home.simpleLoop")}
               </h2>
               <p className="mt-4 text-lg leading-8 text-muted-foreground">
-                Enough structure to begin and enough room to do the work your
-                way.
+                {t("home.simpleLoopDescription")}
               </p>
             </div>
             <div className="mt-12 divide-y divide-border border-y border-border">
@@ -227,7 +239,7 @@ export default function Home() {
                 const Icon = step.icon;
                 return (
                   <div
-                    key={step.title}
+                    key={step.titleKey}
                     className="grid gap-5 py-7 sm:grid-cols-[auto_0.8fr_1.2fr] sm:items-center sm:gap-8"
                   >
                     <span
@@ -236,10 +248,10 @@ export default function Home() {
                       <Icon size={20} aria-hidden="true" />
                     </span>
                     <h3 className="text-xl font-semibold tracking-tight">
-                      {step.title}
+                      {t(step.titleKey)}
                     </h3>
                     <p className="max-w-lg text-base leading-7 text-muted-foreground">
-                      {step.description}
+                      {t(step.descriptionKey)}
                     </p>
                   </div>
                 );
@@ -255,12 +267,10 @@ export default function Home() {
                 <Users size={22} aria-hidden="true" />
               </div>
               <h2 className="text-balance text-3xl font-semibold tracking-[-0.025em] sm:text-4xl">
-                Focus together, keep your own notes.
+                {t("home.togetherTitle")}
               </h2>
               <p className="mt-4 max-w-xl text-base leading-7 text-teal-50/85">
-                Create a session, share the invitation link, and start at the
-                same time. Your intention and interruptions remain private on
-                your device.
+                {t("home.togetherDescription")}
               </p>
             </div>
             <Button
@@ -270,7 +280,7 @@ export default function Home() {
               className="h-12 w-full bg-[var(--surface-soft)] px-6 text-[var(--color-teal-dark)] hover:bg-[var(--surface-accent)] dark:text-foreground lg:w-auto"
             >
               <a href="/create-group-session">
-                Create a group session
+                {t("home.createGroup")}
                 <ArrowRight size={17} aria-hidden="true" />
               </a>
             </Button>
@@ -281,10 +291,10 @@ export default function Home() {
           <div className="container flex flex-col gap-7 py-16 sm:flex-row sm:items-center sm:justify-between sm:py-20">
             <div>
               <h2 className="text-balance text-3xl font-semibold tracking-[-0.025em]">
-                Pause everything else.
+                {t("home.pauseTitle")}
               </h2>
               <p className="mt-3 text-base text-muted-foreground">
-                Your next focused hour can start here.
+                {t("home.pauseDescription")}
               </p>
             </div>
             <Button
@@ -293,7 +303,7 @@ export default function Home() {
               className="h-12 w-full bg-[var(--color-teal)] px-6 text-white hover:bg-[var(--color-teal-dark)] sm:w-auto"
             >
               <a href="/dashboard">
-                Start a focus session
+                {t("home.startFocus")}
                 <ArrowRight size={17} aria-hidden="true" />
               </a>
             </Button>
@@ -302,12 +312,12 @@ export default function Home() {
       </main>
 
       <footer className="container flex flex-col gap-3 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-        <p>Focus Flow, a calmer way to work with your attention.</p>
+        <p>{t("home.footer")}</p>
         <a
           href="/settings"
           className="w-fit underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-teal)] focus-visible:ring-offset-4"
         >
-          Privacy and settings
+          {t("home.privacy")}
         </a>
       </footer>
     </div>

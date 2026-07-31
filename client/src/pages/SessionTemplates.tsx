@@ -21,8 +21,10 @@ import { Label } from "@/components/ui/label";
 import { Plus, Trash2 } from "lucide-react";
 import { formatDuration } from "@/lib/time";
 import { toast } from "sonner";
+import { useLocale } from "@/contexts/LocaleContext";
 
 export default function SessionTemplates() {
+  const { language, t } = useLocale();
   const [templates, setTemplates] = useState<SessionTemplate[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -84,7 +86,7 @@ export default function SessionTemplates() {
     <div className="p-6 md:p-8 pb-24 md:pb-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-foreground">
-          Session Templates
+          {t("templates.title")}
         </h1>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
@@ -101,29 +103,29 @@ export default function SessionTemplates() {
               }}
             >
               <Plus size={18} />
-              New Template
+              {t("templates.new")}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {editingId ? "Edit Template" : "Create Template"}
+                {editingId ? t("templates.edit") : t("templates.create")}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="name">Template Name</Label>
+                <Label htmlFor="name">{t("templates.name")}</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={e =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  placeholder="e.g., Deep Work"
+                  placeholder={t("templates.namePlaceholder")}
                 />
               </div>
               <div>
-                <Label htmlFor="duration">Duration (minutes)</Label>
+                <Label htmlFor="duration">{t("templates.duration")}</Label>
                 <Input
                   id="duration"
                   type="number"
@@ -138,18 +140,20 @@ export default function SessionTemplates() {
                 />
               </div>
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">
+                  {t("templates.description")}
+                </Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={e =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  placeholder="What is this template for?"
+                  placeholder={t("templates.descriptionPlaceholder")}
                 />
               </div>
               <div>
-                <Label htmlFor="color">Color</Label>
+                <Label htmlFor="color">{t("templates.color")}</Label>
                 <div className="flex gap-2">
                   <input
                     id="color"
@@ -173,7 +177,9 @@ export default function SessionTemplates() {
                 className="w-full bg-[var(--color-teal)] hover:bg-[var(--color-teal-dark)] text-white"
                 onClick={handleSave}
               >
-                {editingId ? "Update" : "Create"}
+                {editingId
+                  ? t("templates.update")
+                  : t("templates.createAction")}
               </Button>
             </div>
           </DialogContent>
@@ -191,14 +197,14 @@ export default function SessionTemplates() {
               <div>
                 <h3 className="font-bold text-foreground">{template.name}</h3>
                 <p className="text-sm text-muted-foreground">
-                  {formatDuration(template.duration)}
+                  {formatDuration(template.duration, language)}
                 </p>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => handleDelete(template.id)}
-                aria-label={`Delete ${template.name} template`}
+                aria-label={t("templates.delete", { name: template.name })}
               >
                 <Trash2 size={16} className="text-destructive" />
               </Button>
@@ -219,7 +225,7 @@ export default function SessionTemplates() {
                 setIsOpen(true);
               }}
             >
-              Edit
+              {t("templates.editAction")}
             </Button>
           </Card>
         ))}

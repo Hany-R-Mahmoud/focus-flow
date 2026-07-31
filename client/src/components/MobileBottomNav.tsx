@@ -16,6 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { useLocale } from "@/contexts/LocaleContext";
 
 interface MobileNavItem {
   label: string;
@@ -23,21 +24,26 @@ interface MobileNavItem {
   icon: React.ReactNode;
 }
 
-const primaryNavItems: MobileNavItem[] = [
-  { label: "Home", href: "/dashboard", icon: <LayoutDashboard /> },
-  { label: "Templates", href: "/templates", icon: <Clock /> },
-  { label: "Groups", href: "/group-sessions", icon: <Users /> },
-  { label: "History", href: "/history", icon: <History /> },
-];
-
-const moreNavItems: MobileNavItem[] = [
-  { label: "Daily Review", href: "/daily-review", icon: <Calendar /> },
-  { label: "Weekly Review", href: "/weekly-review", icon: <Calendar /> },
-  { label: "Settings", href: "/settings", icon: <Settings /> },
-];
-
 export default function MobileBottomNav() {
   const [location, setLocation] = useLocation();
+  const { t } = useLocale();
+
+  const primaryNavItems: MobileNavItem[] = [
+    { label: t("nav.home"), href: "/dashboard", icon: <LayoutDashboard /> },
+    { label: t("nav.templates"), href: "/templates", icon: <Clock /> },
+    { label: t("nav.groups"), href: "/group-sessions", icon: <Users /> },
+    { label: t("nav.history"), href: "/history", icon: <History /> },
+  ];
+
+  const moreNavItems: MobileNavItem[] = [
+    { label: t("nav.dailyReview"), href: "/daily-review", icon: <Calendar /> },
+    {
+      label: t("nav.weeklyReview"),
+      href: "/weekly-review",
+      icon: <Calendar />,
+    },
+    { label: t("nav.settings"), href: "/settings", icon: <Settings /> },
+  ];
 
   const isActive = (href: string) => location.startsWith(href);
   const isMoreActive = moreNavItems.some(item => isActive(item.href));
@@ -50,23 +56,23 @@ export default function MobileBottomNav() {
           size="sm"
           className="min-w-0 gap-1.5 bg-blue-600 text-xs text-white hover:bg-blue-700"
           onClick={() => setLocation("/create-group-session")}
-          aria-label="Create Group Session"
+          aria-label={t("nav.createGroup")}
         >
           <Users size={16} />
-          <span className="truncate">Group session</span>
+          <span className="truncate">{t("nav.createGroup")}</span>
         </Button>
         <Button
           type="button"
           size="sm"
           className="min-w-0 gap-1.5 bg-teal-600 text-xs text-white hover:bg-teal-700"
           onClick={() => setLocation("/session/new")}
-          aria-label="Start Session"
+          aria-label={t("nav.startSession")}
         >
           <Play size={16} />
-          <span className="truncate">Start session</span>
+          <span className="truncate">{t("nav.startSession")}</span>
         </Button>
       </div>
-      <nav aria-label="Mobile navigation" className="grid grid-cols-5">
+      <nav aria-label={t("nav.mobile")} className="grid grid-cols-5">
         {primaryNavItems.map(item => (
           <Button
             asChild
@@ -98,7 +104,7 @@ export default function MobileBottomNav() {
               type="button"
               variant={isMoreActive ? "secondary" : "ghost"}
               className="h-16 min-w-0 flex-col gap-1 rounded-none px-1 text-muted-foreground"
-              aria-label="More navigation options"
+              aria-label={t("nav.moreOptions")}
               aria-current={isMoreActive ? "page" : undefined}
             >
               <span
@@ -110,7 +116,7 @@ export default function MobileBottomNav() {
               >
                 <MoreHorizontal />
               </span>
-              <span className="text-[10px] leading-4">More</span>
+              <span className="text-[10px] leading-4">{t("nav.more")}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent

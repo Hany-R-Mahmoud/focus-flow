@@ -23,9 +23,11 @@ import {
   calculateTimeUntilStart,
 } from "@/lib/groupSession";
 import { formatTime } from "@/lib/time";
+import { useLocale } from "@/contexts/LocaleContext";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
+  const { language, t } = useLocale();
   const [sessions, setSessions] = useState<FocusSession[]>([]);
   const [todayReview, setTodayReview] = useState<DailyReview | null>(null);
   const [upcomingGroupSessions, setUpcomingGroupSessions] = useState<
@@ -126,17 +128,17 @@ export default function Dashboard() {
       <div className="rounded-2xl mb-8 min-h-60 overflow-hidden border border-border bg-card">
         <div className="p-8 min-h-60 flex flex-col justify-center">
           <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-2">
-            Focus Session Flow
+            {t("dashboard.title")}
           </h1>
           <p className="text-lg text-muted-foreground mb-6">
-            Plan your focus. Track your time. Understand your patterns.
+            {t("dashboard.subtitle")}
           </p>
           <Button
             className="w-fit gap-2 bg-[var(--color-teal)] hover:bg-[var(--color-teal-dark)] text-white"
             onClick={() => setLocation("/session/new")}
           >
             <Play size={18} />
-            Start a Session
+            {t("dashboard.start")}
           </Button>
         </div>
       </div>
@@ -147,10 +149,10 @@ export default function Dashboard() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm text-muted-foreground mb-1">
-                Today's Focus
+                {t("dashboard.todayFocus")}
               </p>
               <p className="text-3xl font-bold text-foreground">
-                {formatDuration(stats.todayFocusTime)}
+                {formatDuration(stats.todayFocusTime, language)}
               </p>
             </div>
             <Clock className="text-[var(--color-teal-foreground)]" size={24} />
@@ -161,7 +163,7 @@ export default function Dashboard() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm text-muted-foreground mb-1">
-                Sessions Today
+                {t("dashboard.sessionsToday")}
               </p>
               <p className="text-3xl font-bold text-foreground">
                 {stats.sessionsCompleted}
@@ -174,12 +176,17 @@ export default function Dashboard() {
         <Card className="p-6">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-muted-foreground mb-1">This Week</p>
+              <p className="text-sm text-muted-foreground mb-1">
+                {t("dashboard.thisWeek")}
+              </p>
               <p className="text-3xl font-bold text-foreground">
-                {formatDuration(stats.weeklyFocusTime)}
+                {formatDuration(stats.weeklyFocusTime, language)}
               </p>
             </div>
-            <TrendingUp className="text-[var(--color-teal-foreground)]" size={24} />
+            <TrendingUp
+              className="text-[var(--color-teal-foreground)]"
+              size={24}
+            />
           </div>
         </Card>
       </div>
@@ -196,15 +203,18 @@ export default function Dashboard() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <Users size={24} className="text-[var(--color-teal-foreground)]" />
-              Group Sessions
+              <Users
+                size={24}
+                className="text-[var(--color-teal-foreground)]"
+              />
+              {t("dashboard.groupSessions")}
             </h2>
             <Button
               onClick={() => setLocation("/group-sessions")}
               variant="outline"
               size="sm"
             >
-              View All
+              {t("dashboard.viewAll")}
             </Button>
           </div>
           <div className="space-y-3">
@@ -226,18 +236,29 @@ export default function Dashboard() {
                 let displayText: string = status;
                 if (status === "upcoming") {
                   const timeUntil = calculateTimeUntilStart(session.startsAt);
-                  displayText = `Starting in ${formatTime(timeUntil)}`;
+                  displayText = t("dashboard.startingIn", {
+                    time: formatTime(timeUntil),
+                  });
                 } else if (status === "starting-soon") {
-                  displayText = "Starting very soon!";
+                  displayText = t("dashboard.startingSoon");
                 } else if (status === "in-progress") {
-                  displayText = `Focus ends in ${formatTime(calculateTimeRemaining(session.startsAt, session.focusMinutes))}`;
+                  displayText = t("dashboard.focusEndsIn", {
+                    time: formatTime(
+                      calculateTimeRemaining(
+                        session.startsAt,
+                        session.focusMinutes
+                      )
+                    ),
+                  });
                 } else if (status === "break") {
                   const breakEnd =
                     new Date(session.startsAt).getTime() +
                     (session.focusMinutes + (session.breakMinutes || 0)) *
                       60 *
                       1000;
-                  displayText = `Break ends in ${formatTime(Math.max(0, breakEnd - now))}`;
+                  displayText = t("dashboard.breakEndsIn", {
+                    time: formatTime(Math.max(0, breakEnd - now)),
+                  });
                 }
 
                 return (
@@ -247,7 +268,9 @@ export default function Dashboard() {
                     onClick={() => setLocation(`/active-group/${session.id}`)}
                     role="button"
                     tabIndex={0}
-                    aria-label={`Open group session ${session.title}`}
+                    aria-label={t("dashboard.openGroup", {
+                      title: session.title,
+                    })}
                     onKeyDown={event => {
                       if (event.key === "Enter" || event.key === " ") {
                         event.preventDefault();
@@ -266,7 +289,9 @@ export default function Dashboard() {
                           </p>
                         )}
                         <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(session.startsAt).toLocaleString()}
+                          {new Date(session.startsAt).toLocaleString(
+                            language === "ar" ? "ar-EG" : "en-US"
+                          )}
                         </p>
                       </div>
                       <div className="text-right">
@@ -290,7 +315,7 @@ export default function Dashboard() {
       {/* Recent Sessions */}
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-foreground mb-4">
-          Recent Sessions
+          {t("dashboard.recent")}
         </h2>
         <div className="space-y-3">
           {sessions.length > 0 ? (
@@ -318,7 +343,8 @@ export default function Dashboard() {
                       m
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {session.distractions.length} distractions
+                      {session.distractions.length}{" "}
+                      {t("dashboard.distractions")}
                     </p>
                   </div>
                 </div>
@@ -327,7 +353,7 @@ export default function Dashboard() {
           ) : (
             <Card className="p-8 text-center">
               <p className="text-muted-foreground">
-                No sessions yet. Start one to begin tracking!
+                {t("dashboard.noSessions")}
               </p>
             </Card>
           )}

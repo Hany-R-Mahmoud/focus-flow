@@ -1,6 +1,7 @@
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePwa } from "@/pwa/PwaContext";
+import { useLocale } from "@/contexts/LocaleContext";
 
 interface PwaInstallMenuActionProps {
   className?: string;
@@ -11,7 +12,9 @@ export default function PwaInstallMenuAction({
   className,
   compact = false,
 }: PwaInstallMenuActionProps) {
-  const { showPersistentInstallAction, canInstall, install, openHelp } = usePwa();
+  const { showPersistentInstallAction, canInstall, install, openHelp } =
+    usePwa();
+  const { t } = useLocale();
 
   if (!showPersistentInstallAction) return null;
 
@@ -28,11 +31,15 @@ export default function PwaInstallMenuAction({
           openHelp();
         }
       }}
-      aria-label="Install Focus Flow"
-      title="Install Focus Flow"
+      aria-label={t("pwa.installLabel")}
+      title={t("pwa.installLabel")}
     >
       <Download size={18} aria-hidden="true" />
-      {compact ? <span className="sr-only">Install Focus Flow</span> : <span>Install app</span>}
+      {compact ? (
+        <span className="sr-only">{t("pwa.installLabel")}</span>
+      ) : (
+        <span>{t("pwa.install")}</span>
+      )}
     </Button>
   );
 }

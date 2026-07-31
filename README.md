@@ -11,8 +11,12 @@ An offline-first focus session planner for students, freelancers, and knowledge 
 - **Session History**: View all completed sessions with details, outcomes, and distraction counts
 - **Daily Review**: Reflect on your focus day with session stats and personal notes
 - **Weekly Review**: Analyze weekly patterns (total sessions, focus time, average distractions, top template)
+- **30-Day Activity Review**: See completed focus time by local calendar day without streaks or gamification
+- **Quick Start Presets**: Prefill 15-minute sprint, 25-minute focus, and 50-minute deep-work sessions
+- **Arabic and RTL UI**: Switch the interface language and automatically mirror document direction for Arabic
+- **Focus Session Preferences**: Optionally keep the screen awake, play a soft completion chime, use haptics, and receive personal end notifications
 - **Group Sessions**: Coordinate focus sessions with shareable links, optional cloud membership, and live presence
-- **Browser Notifications**: Optional five-minute reminders for upcoming group sessions
+- **Browser Notifications**: Optional reminders for upcoming group sessions and completed personal sessions
 - **Export/Import**: Backup your data as JSON and restore it anytime
 - **Offline-First**: All data stored locally in IndexedDB; works without internet
 - **Responsive Design**: Works on mobile, tablet, and desktop
@@ -400,6 +404,7 @@ MIT
 ## Support
 
 For questions or issues, please refer to the documentation or create an issue in the repository.
+
 # FocusSessionFlow
 
 An offline-first focus session planner for students, freelancers, and knowledge workers. Plan focused work sessions, track your time, capture distractions, and review patterns—all locally, without requiring an account or internet connection. Coordinate focus sessions with others using shareable links.
@@ -413,8 +418,12 @@ An offline-first focus session planner for students, freelancers, and knowledge 
 - **Session History**: View all completed sessions with details, outcomes, and distraction counts
 - **Daily Review**: Reflect on your focus day with session stats and personal notes
 - **Weekly Review**: Analyze weekly patterns (total sessions, focus time, average distractions, top template)
+- **30-Day Activity Review**: See completed focus time by local calendar day without streaks or gamification
+- **Quick Start Presets**: Prefill 15-minute sprint, 25-minute focus, and 50-minute deep-work sessions
+- **Arabic and RTL UI**: Switch the interface language and automatically mirror document direction for Arabic
+- **Focus Session Preferences**: Optionally keep the screen awake, play a soft completion chime, use haptics, and receive personal end notifications
 - **Group Sessions**: Coordinate focus sessions with shareable links, optional cloud membership, and live presence
-- **Browser Notifications**: Optional five-minute reminders for upcoming group sessions
+- **Browser Notifications**: Optional reminders for upcoming group sessions and completed personal sessions
 - **Export/Import**: Backup your data as JSON and restore it anytime
 - **Offline-First**: All data stored locally in IndexedDB; works without internet
 - **Responsive Design**: Works on mobile, tablet, and desktop

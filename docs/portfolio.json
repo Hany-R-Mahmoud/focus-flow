@@ -48,6 +48,22 @@
       "ar": "Daily Review: Reflect on your focus day with session stats and personal notes"
     },
     {
+      "en": "Arabic and RTL UI: Switch the interface language and automatically mirror document direction for Arabic",
+      "ar": "واجهة عربية واتجاه RTL: بدّل لغة الواجهة وتتحول تلقائيًا إلى اتجاه RTL عند اختيار العربية"
+    },
+    {
+      "en": "Quick Start Presets: Prefill 15-minute sprint, 25-minute focus, and 50-minute deep-work sessions",
+      "ar": "بدايات سريعة: املأ إعدادات جلسات اندفاعة 15 دقيقة وتركيز 25 دقيقة وعمل عميق 50 دقيقة مسبقًا"
+    },
+    {
+      "en": "Focus Session Preferences: Optionally keep the screen awake, play a soft completion chime, use haptics, and receive personal end notifications",
+      "ar": "تفضيلات جلسة التركيز: أبقِ الشاشة مضاءة اختياريًا وشغّل نغمة هادئة أو اهتزازًا واستقبل إشعارًا عند انتهاء الجلسة الشخصية"
+    },
+    {
+      "en": "30-Day Activity Review: View completed focus time by local calendar day without streaks or gamification",
+      "ar": "مراجعة نشاط 30 يومًا: اعرض وقت التركيز المكتمل حسب اليوم المحلي دون سلاسل أو عناصر تحفيز لعبية"
+    },
+    {
       "en": "Mobile Navigation: Access session actions and primary destinations from a fixed bottom navigation bar",
       "ar": "Mobile Navigation: Access session actions and primary destinations from a fixed bottom navigation bar"
     }

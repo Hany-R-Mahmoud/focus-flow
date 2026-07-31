@@ -3,6 +3,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { LocaleProvider, useLocale } from "./contexts/LocaleContext";
 import Sidebar from "./components/Sidebar";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useLocation } from "wouter";
@@ -27,6 +28,8 @@ const ActiveGroupSession = lazy(() => import("./pages/ActiveGroupSession"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
 function Router() {
+  const { t } = useLocale();
+
   return (
     <Suspense
       fallback={
@@ -35,7 +38,7 @@ function Router() {
           role="status"
           aria-live="polite"
         >
-          Loading your focus space…
+          {t("common.loading")}
         </div>
       }
     >
@@ -105,25 +108,27 @@ function App() {
 
   return (
     <ThemeProvider defaultTheme="light" switchable>
-      <SeoMetadata />
-      <PwaStatusBar />
-      <ErrorBoundary>
-        {startupError ? (
-          <div className="min-h-screen p-8 text-center text-destructive">
-            {startupError}
-          </div>
-        ) : !isReady ? (
-          <div className="min-h-screen p-8 text-center text-muted-foreground">
-            Preparing your focus space…
-          </div>
-        ) : (
-          <TooltipProvider>
-            <Toaster />
-            <AppContent />
-            <PwaInstallHelpDialog />
-          </TooltipProvider>
-        )}
-      </ErrorBoundary>
+      <LocaleProvider>
+        <SeoMetadata />
+        <PwaStatusBar />
+        <ErrorBoundary>
+          {startupError ? (
+            <div className="min-h-screen p-8 text-center text-destructive">
+              {startupError}
+            </div>
+          ) : !isReady ? (
+            <div className="min-h-screen p-8 text-center text-muted-foreground">
+              Preparing your focus space…
+            </div>
+          ) : (
+            <TooltipProvider>
+              <Toaster />
+              <AppContent />
+              <PwaInstallHelpDialog />
+            </TooltipProvider>
+          )}
+        </ErrorBoundary>
+      </LocaleProvider>
     </ThemeProvider>
   );
 }
