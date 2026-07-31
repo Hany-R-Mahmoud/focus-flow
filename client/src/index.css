@@ -141,6 +141,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    padding-bottom: env(safe-area-inset-bottom);
     font-family: "Geist Variable", "Geist", system-ui, sans-serif;
     font-kerning: normal;
     font-optical-sizing: auto;
@@ -157,6 +158,10 @@
   input[type="radio"]:not(:disabled) {
     @apply cursor-pointer;
   }
+}
+
+html {
+  scroll-padding-top: env(safe-area-inset-top);
 }
 
 @layer components {

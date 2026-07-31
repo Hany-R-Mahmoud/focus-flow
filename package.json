@@ -10,6 +10,7 @@
     "preview": "vite preview --host",
     "check": "tsc --noEmit",
     "test": "vitest run",
+    "pwa:check": "vitest run client/src/pwa/pwa.test.ts",
     "format": "prettier --write .",
     "doctor": "npx react-doctor@latest"
   },

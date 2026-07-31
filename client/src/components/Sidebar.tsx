@@ -10,6 +10,7 @@ import {
   Users,
 } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
+import PwaInstallMenuAction from "./PwaInstallMenuAction";
 
 interface NavItem {
   label: string;
@@ -89,6 +90,7 @@ export default function Sidebar() {
 
         <div className="p-4 space-y-2 border-t border-border">
           <ThemeToggle showLabel />
+          <PwaInstallMenuAction className="w-full justify-start gap-3" />
           <Button
             className="w-full gap-2 bg-blue-600 hover:bg-blue-700 text-white"
             onClick={() => setLocation("/create-group-session")}
@@ -131,6 +133,11 @@ export default function Sidebar() {
         <div className="absolute right-3 bottom-44 rounded-xl border border-border bg-card/95 p-1 shadow-lg">
           <ThemeToggle showLabel />
         </div>
+
+        <PwaInstallMenuAction
+          compact
+          className="fixed bottom-20 left-4 z-30 rounded-full bg-card shadow-lg"
+        />
 
         {/* Mobile floating action buttons */}
         <div className="fixed bottom-20 right-4 flex flex-col gap-2">

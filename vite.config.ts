@@ -1,11 +1,43 @@
 import { jsxLocPlugin } from "@builder.io/vite-plugin-jsx-loc";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 
+function pwaServiceWorkerPlugin(): Plugin {
+  return {
+    name: "focus-flow-pwa-service-worker",
+    apply: "build",
+    closeBundle() {
+      const outputDir = path.resolve(import.meta.dirname, "dist", "public");
+      const assetsDir = path.join(outputDir, "assets");
+      const publicEntries = [
+        "/index.html",
+        "/manifest.webmanifest",
+        "/favicon.svg",
+        "/apple-touch-icon.png",
+        "/focus-flow-icon-192.png",
+        "/focus-flow-icon-512.png",
+        "/focus-flow-icon-maskable-512.png",
+      ].filter(entry => existsSync(path.join(outputDir, entry.slice(1))));
+      const assetEntries = existsSync(assetsDir)
+        ? readdirSync(assetsDir)
+            .filter(file => /^(?:index|Home|geist-).+\.(?:js|css|woff2?)$/.test(file))
+            .map(file => `/assets/${file}`)
+        : [];
+      const workerSource = readFileSync(
+        path.resolve(import.meta.dirname, "client", "src", "pwa", "service-worker.js"),
+        "utf8"
+      ).replace("__PRECACHE_ENTRIES__", JSON.stringify([...publicEntries, ...assetEntries]));
+      writeFileSync(path.join(outputDir, "sw.js"), workerSource);
+    },
+  };
+}
+
 const plugins = [
+  pwaServiceWorkerPlugin(),
   react(),
   tailwindcss(),
   jsxLocPlugin(),

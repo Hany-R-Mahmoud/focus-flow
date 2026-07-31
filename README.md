@@ -72,6 +72,19 @@ The server generates `/robots.txt`, `/sitemap.xml`, and `/llms.txt`. Only the
 homepage is included in the sitemap; application routes are marked `noindex`.
 Replace the example `SITE_URL` with the deployed HTTPS origin.
 
+### PWA checks
+
+```bash
+pnpm pwa:check
+```
+
+Focus Flow is installable from supporting browsers. Chromium browsers may
+offer a native install prompt; iOS uses browser instructions for Add to Home
+Screen. The app keeps a persistent install action after a dismissed promotion
+and provides copyable-link fallbacks in embedded browsers. The service worker
+caches only the application shell and versioned static assets; IndexedDB data,
+Supabase/auth traffic, and downloads remain network-only.
+
 ## Usage
 
 ### Create a Session Template
@@ -229,6 +242,7 @@ client/
   src/
     pages/        ← Page components (Dashboard, Templates, etc.)
     components/   ← Reusable UI components (Sidebar, etc.)
+    pwa/          ← Install state, WebView fallbacks, and generated worker source
     lib/          ← Utilities (db.ts, time.ts, seed.ts, groupSession.ts, notifications.ts)
     contexts/     ← React contexts (ThemeContext)
     index.css     ← Global styles and design tokens

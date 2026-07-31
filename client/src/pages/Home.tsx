@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
+import PwaInstallMenuAction from "@/components/PwaInstallMenuAction";
 
 const steps = [
   {
@@ -58,6 +59,7 @@ export default function Home() {
 
           <div className="flex items-center gap-3">
             <ThemeToggle />
+            <PwaInstallMenuAction compact className="border border-border" />
             <Button
               asChild
               variant="ghost"

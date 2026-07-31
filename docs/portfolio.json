@@ -19,7 +19,8 @@
     "TypeScript",
     "Supabase",
     "Tailwind",
-    "Vitest"
+    "Vitest",
+    "PWA"
   ],
   "features": [
     {
@@ -67,7 +68,8 @@
     "install": "pnpm install",
     "dev": "pnpm run dev",
     "test": "pnpm run test",
-    "build": "pnpm run build"
+    "build": "pnpm run build",
+    "pwa_check": "pnpm run pwa:check"
   },
   "repository": {
     "branch": "main",

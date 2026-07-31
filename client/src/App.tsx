@@ -9,6 +9,8 @@ import { useLocation } from "wouter";
 import { useSessionReminders } from "@/hooks/useSessionReminders";
 import { seedDatabase, initDB } from "@/lib/db";
 import SeoMetadata from "./components/SeoMetadata";
+import PwaInstallHelpDialog from "./components/PwaInstallHelpDialog";
+import PwaStatusBar from "./components/PwaStatusBar";
 
 const Home = lazy(() => import("./pages/Home"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -98,6 +100,7 @@ function App() {
   return (
     <ThemeProvider defaultTheme="light" switchable>
       <SeoMetadata />
+      <PwaStatusBar />
       <ErrorBoundary>
         {startupError ? (
           <div className="min-h-screen p-8 text-center text-destructive">
@@ -111,6 +114,7 @@ function App() {
           <TooltipProvider>
             <Toaster />
             <AppContent />
+            <PwaInstallHelpDialog />
           </TooltipProvider>
         )}
       </ErrorBoundary>
