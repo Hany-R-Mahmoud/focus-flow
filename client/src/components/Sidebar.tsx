@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import PwaInstallMenuAction from "./PwaInstallMenuAction";
+import MobileBottomNav from "./MobileBottomNav";
 
 interface NavItem {
   label: string;
@@ -108,58 +109,37 @@ export default function Sidebar() {
         </div>
       </aside>
 
-      {/* Mobile Bottom Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border">
-        <nav className="grid grid-cols-7">
-          {navItems.map(item => (
-            <Button
-              asChild
-              key={item.href}
-              variant="ghost"
-              size="sm"
-              className="min-w-0 rounded-none px-1 flex flex-col gap-1 h-16"
-              aria-current={isActive(item.href) ? "page" : undefined}
-            >
-              <a href={item.href}>
-                <span className={isActive(item.href) ? "text-teal-600" : ""}>
-                  {item.icon}
-                </span>
-                <span className="text-[10px]">{item.label.split(" ")[0]}</span>
-              </a>
-            </Button>
-          ))}
-        </nav>
+      <MobileBottomNav />
 
-        <div className="absolute right-3 bottom-44 rounded-xl border border-border bg-card/95 p-1 shadow-lg">
-          <ThemeToggle showLabel />
-        </div>
+      <div className="fixed right-3 bottom-56 rounded-xl border border-border bg-card/95 p-1 shadow-lg md:hidden">
+        <ThemeToggle showLabel />
+      </div>
 
-        <PwaInstallMenuAction
-          compact
-          className="fixed bottom-20 left-4 z-30 rounded-full bg-card shadow-lg"
-        />
+      <PwaInstallMenuAction
+        compact
+        className="fixed bottom-20 left-4 z-30 rounded-full bg-card shadow-lg md:hidden"
+      />
 
-        {/* Mobile floating action buttons */}
-        <div className="fixed bottom-20 right-4 flex flex-col gap-2">
-          <Button
-            size="icon-lg"
-            className="size-11 gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full"
-            onClick={() => setLocation("/create-group-session")}
-            title="Create Group Session"
-            aria-label="Create Group Session"
-          >
-            <Users size={18} />
-          </Button>
-          <Button
-            size="icon-lg"
-            className="size-11 gap-2 bg-teal-600 hover:bg-teal-700 text-white rounded-full"
-            onClick={() => setLocation("/session/new")}
-            title="Start Session"
-            aria-label="Start Session"
-          >
-            <Play size={18} />
-          </Button>
-        </div>
+      {/* Mobile floating action buttons */}
+      <div className="fixed bottom-20 right-4 flex flex-col gap-2 md:hidden">
+        <Button
+          size="icon-lg"
+          className="size-11 gap-2 rounded-full bg-blue-600 text-white hover:bg-blue-700"
+          onClick={() => setLocation("/create-group-session")}
+          title="Create Group Session"
+          aria-label="Create Group Session"
+        >
+          <Users size={18} />
+        </Button>
+        <Button
+          size="icon-lg"
+          className="size-11 gap-2 rounded-full bg-teal-600 text-white hover:bg-teal-700"
+          onClick={() => setLocation("/session/new")}
+          title="Start Session"
+          aria-label="Start Session"
+        >
+          <Play size={18} />
+        </Button>
       </div>
     </>
   );

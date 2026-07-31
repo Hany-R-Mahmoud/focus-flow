@@ -76,6 +76,13 @@ Use the existing 4px spacing rhythm through Tailwind utilities. Group-session pa
 - **States:** informational only; never imply shared live participant presence.
 - **Accessibility:** readable text with sufficient contrast.
 
+### Mobile bottom navigation
+
+- **Structure:** four primary destinations plus a More menu for reviews and settings.
+- **States:** default, current route, open menu, focus-visible, and safe-area inset.
+- **Accessibility:** semantic navigation landmark, visible labels, `aria-current` for the current route, and keyboard-reachable menu items.
+- **Layout:** fixed to the mobile viewport; the app shell owns the scrolling content and keeps the navigation above the device safe area.
+
 ## 6. Motion & Interaction
 
 - Keep existing 150–250ms control transitions.

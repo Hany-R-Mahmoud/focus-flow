@@ -288,7 +288,7 @@ export default function GroupSessionPreview() {
 
   if (error) {
     return (
-      <div className="max-w-2xl mx-auto py-12 px-4">
+      <div className="max-w-2xl mx-auto py-12 px-4 pb-24 md:pb-12">
         <Card className="p-6 border-red-200 bg-red-50">
           <div className="flex items-start gap-4">
             <AlertCircle className="text-red-600 mt-1" size={24} />
@@ -324,7 +324,7 @@ export default function GroupSessionPreview() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto py-8 px-4">
+    <div className="max-w-2xl mx-auto py-8 px-4 pb-24 md:pb-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground mb-2">
           {session.title}

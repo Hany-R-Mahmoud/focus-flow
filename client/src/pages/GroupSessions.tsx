@@ -196,7 +196,7 @@ export default function GroupSessions() {
 
   if (sessions.length === 0) {
     return (
-      <div className="max-w-2xl mx-auto py-12 px-4">
+      <div className="max-w-2xl mx-auto py-12 px-4 pb-[11rem] md:pb-12">
         <div className="text-center space-y-4">
           <Users size={48} className="mx-auto text-muted-foreground" />
           <h1 className="text-2xl font-bold">No group sessions yet</h1>
@@ -217,7 +217,7 @@ export default function GroupSessions() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
+    <div className="max-w-4xl mx-auto py-8 px-4 pb-[11rem] md:pb-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground mb-2">
           Group Sessions

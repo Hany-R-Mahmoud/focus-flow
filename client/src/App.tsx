@@ -67,9 +67,15 @@ function AppContent() {
   const isLandingPage = location === "/";
 
   return (
-    <div className={isLandingPage ? "min-h-screen" : "flex h-screen"}>
+    <div className={isLandingPage ? "min-h-screen" : "flex h-[100dvh] min-h-0"}>
       {!isLandingPage && <Sidebar />}
-      <main className={isLandingPage ? "min-h-screen" : "flex-1 overflow-auto"}>
+      <main
+        className={
+          isLandingPage
+            ? "min-h-screen"
+            : "min-h-0 min-w-0 flex-1 overflow-auto"
+        }
+      >
         <Router />
       </main>
     </div>
