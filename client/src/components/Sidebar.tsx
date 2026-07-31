@@ -9,7 +9,6 @@ import {
   Play,
   Users,
 } from "lucide-react";
-import ThemeToggle from "./ThemeToggle";
 import PwaInstallMenuAction from "./PwaInstallMenuAction";
 import MobileBottomNav from "./MobileBottomNav";
 import { useLocale } from "@/contexts/LocaleContext";
@@ -100,7 +99,6 @@ export default function Sidebar() {
         </nav>
 
         <div className="p-4 space-y-2 border-t border-border">
-          <ThemeToggle showLabel />
           <PwaInstallMenuAction className="w-full justify-start gap-3" />
           <Button
             className="w-full gap-2 bg-blue-600 hover:bg-blue-700 text-white"

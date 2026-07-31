@@ -76,13 +76,6 @@ export default function Home() {
             >
               <a href="/group-sessions">{t("home.groupSessions")}</a>
             </Button>
-            <Button
-              asChild
-              variant="outline"
-              className="border-[var(--color-teal)]/30 bg-background hover:border-[var(--color-teal)] hover:bg-[var(--surface-accent)]"
-            >
-              <a href="/dashboard">{t("home.openDashboard")}</a>
-            </Button>
           </div>
         </div>
       </header>
@@ -114,6 +107,14 @@ export default function Home() {
                     <Play size={18} fill="currentColor" aria-hidden="true" />
                     {t("home.startFocus")}
                   </a>
+                </Button>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="h-12 border-[var(--color-teal)]/30 bg-background px-6 hover:border-[var(--color-teal)] hover:bg-[var(--surface-accent)]"
+                >
+                  <a href="/dashboard">{t("home.openDashboard")}</a>
                 </Button>
                 <Button
                   asChild

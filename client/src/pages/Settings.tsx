@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { Download, Upload, Trash2 } from "lucide-react";
 import { requestNotificationPermission } from "@/lib/notifications";
 import { useLocale } from "@/contexts/LocaleContext";
+import ThemeToggle from "@/components/ThemeToggle";
 import {
   loadUserPreferences,
   updateUserPreferences,
@@ -275,6 +276,15 @@ export default function Settings() {
                 : t("settings.languageArabic")}
             </Button>
           ))}
+        </div>
+        <div className="mt-6 flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-medium text-foreground">{t("settings.theme")}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {t("settings.themeDescription")}
+            </p>
+          </div>
+          <ThemeToggle showLabel />
         </div>
       </Card>
 

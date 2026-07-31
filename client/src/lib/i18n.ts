@@ -97,6 +97,8 @@ const arabicTranslations: Record<string, string> = {
     "اختر لغة الواجهة. ستتحول الواجهة العربية تلقائيًا إلى اتجاه RTL.",
   "settings.languageEnglish": "English",
   "settings.languageArabic": "العربية",
+  "settings.theme": "مظهر الواجهة",
+  "settings.themeDescription": "اختر الوضع الفاتح أو الداكن لواجهة التطبيق.",
   "settings.focusPreferences": "تفضيلات جلسة التركيز",
   "settings.wakeLock": "إبقاء الشاشة مضاءة أثناء الجلسة",
   "settings.wakeLockDescription":
@@ -319,6 +321,8 @@ const englishTranslations: Record<string, string> = {
     "Choose the interface language. Arabic automatically switches the interface to RTL.",
   "settings.languageEnglish": "English",
   "settings.languageArabic": "العربية",
+  "settings.theme": "Interface theme",
+  "settings.themeDescription": "Choose light or dark mode for the app.",
   "settings.focusPreferences": "Focus session preferences",
   "settings.wakeLock": "Keep screen awake during sessions",
   "settings.wakeLockDescription":
