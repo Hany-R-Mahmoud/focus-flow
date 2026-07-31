@@ -4,6 +4,7 @@ import {
   History,
   LayoutDashboard,
   MoreHorizontal,
+  Play,
   Settings,
   Users,
 } from "lucide-react";
@@ -36,13 +37,35 @@ const moreNavItems: MobileNavItem[] = [
 ];
 
 export default function MobileBottomNav() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
 
   const isActive = (href: string) => location.startsWith(href);
   const isMoreActive = moreNavItems.some(item => isActive(item.href));
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/85 pb-[env(safe-area-inset-bottom)] md:hidden">
+      <div className="grid grid-cols-2 gap-2 border-b border-border px-3 py-2">
+        <Button
+          type="button"
+          size="sm"
+          className="min-w-0 gap-1.5 bg-blue-600 text-xs text-white hover:bg-blue-700"
+          onClick={() => setLocation("/create-group-session")}
+          aria-label="Create Group Session"
+        >
+          <Users size={16} />
+          <span className="truncate">Group session</span>
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          className="min-w-0 gap-1.5 bg-teal-600 text-xs text-white hover:bg-teal-700"
+          onClick={() => setLocation("/session/new")}
+          aria-label="Start Session"
+        >
+          <Play size={16} />
+          <span className="truncate">Start session</span>
+        </Button>
+      </div>
       <nav aria-label="Mobile navigation" className="grid grid-cols-5">
         {primaryNavItems.map(item => (
           <Button

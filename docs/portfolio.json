@@ -46,6 +46,10 @@
     {
       "en": "Daily Review: Reflect on your focus day with session stats and personal notes",
       "ar": "Daily Review: Reflect on your focus day with session stats and personal notes"
+    },
+    {
+      "en": "Mobile Navigation: Access session actions and primary destinations from a fixed bottom navigation bar",
+      "ar": "Mobile Navigation: Access session actions and primary destinations from a fixed bottom navigation bar"
     }
   ],
   "progress": {
@@ -78,6 +82,6 @@
   },
   "source": {
     "workspace": "workspace/focussessionflow",
-    "last_reviewed": "2026-07-29"
+    "last_reviewed": "2026-07-31"
   }
 }
