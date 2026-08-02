@@ -45,7 +45,7 @@ function renderSeoHtml(html: string, request: Request): string {
   const requestOrigin = `${request.protocol}://${request.get("host")}`;
   const siteUrl = normalizeSiteUrl(configuredSiteUrl || requestOrigin);
   const canonicalUrl = absoluteSiteUrl(siteUrl, request.path);
-  const imageUrl = absoluteSiteUrl(siteUrl, "/brand/focus-flow-mark.png");
+  const imageUrl = absoluteSiteUrl(siteUrl, "/social-card.png");
   const jsonLd = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -71,9 +71,14 @@ function renderSeoHtml(html: string, request: Request): string {
   rendered = replaceSeoAttribute(rendered, "og:url", "content", canonicalUrl);
   rendered = replaceSeoAttribute(rendered, "og:type", "content", metadata.type);
   rendered = replaceSeoAttribute(rendered, "og:image", "content", imageUrl);
+  rendered = replaceSeoAttribute(rendered, "og:image:type", "content", "image/png");
+  rendered = replaceSeoAttribute(rendered, "og:image:width", "content", "1200");
+  rendered = replaceSeoAttribute(rendered, "og:image:height", "content", "630");
+  rendered = replaceSeoAttribute(rendered, "og:image:alt", "content", metadata.title);
   rendered = replaceSeoAttribute(rendered, "twitter:title", "content", metadata.title);
   rendered = replaceSeoAttribute(rendered, "twitter:description", "content", metadata.description);
   rendered = replaceSeoAttribute(rendered, "twitter:image", "content", imageUrl);
+  rendered = replaceSeoAttribute(rendered, "twitter:image:alt", "content", metadata.title);
   rendered = rendered.replace(
     /<script type="application\/ld\+json" data-seo="jsonld">[\s\S]*?<\/script>/,
     metadata.robots === "index, follow"
