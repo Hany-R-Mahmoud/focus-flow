@@ -12,7 +12,6 @@ import { seedDatabase, initDB } from "@/lib/db";
 import SeoMetadata from "./components/SeoMetadata";
 import PwaInstallHelpDialog from "./components/PwaInstallHelpDialog";
 import PwaStatusBar from "./components/PwaStatusBar";
-import StandaloneVisitorCounter from "./components/StandaloneVisitorCounter";
 
 const Home = lazy(() => import("./pages/Home"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -82,7 +81,6 @@ function AppContent() {
       >
         <Router />
       </main>
-      <StandaloneVisitorCounter appSlug="focus-session-flow" label="VISITORS" />
     </div>
   );
 }

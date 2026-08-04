@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import PwaInstallMenuAction from "@/components/PwaInstallMenuAction";
 import { useLocale } from "@/contexts/LocaleContext";
+import StandaloneVisitorCounter from "@/components/StandaloneVisitorCounter";
 
 const steps = [
   {
@@ -321,6 +322,7 @@ export default function Home() {
           {t("home.privacy")}
         </a>
       </footer>
+      <StandaloneVisitorCounter appSlug="focus-session-flow" label="VISITORS" />
     </div>
   );
 }
