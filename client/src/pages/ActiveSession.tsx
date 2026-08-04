@@ -191,7 +191,7 @@ export default function ActiveSession() {
         setIsRunning(true);
         toast.success("Session resumed");
       }
-    } catch (err) {
+    } catch {
       toast.error("Failed to update session");
     }
   }
@@ -276,7 +276,7 @@ export default function ActiveSession() {
       setDistractionForm({ category: "other", note: "" });
       setShowDistractionDialog(false);
       toast.success("Distraction logged");
-    } catch (err) {
+    } catch {
       toast.error("Failed to log distraction");
     }
   }
@@ -308,7 +308,7 @@ export default function ActiveSession() {
       }
       toast.success("Session completed!");
       setTimeout(() => setLocation("/history"), 1000);
-    } catch (err) {
+    } catch {
       toast.error("Failed to complete session");
     }
   }

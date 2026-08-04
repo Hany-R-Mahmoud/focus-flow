@@ -43,17 +43,20 @@
   </head>
 
   <body>
-    <div id="root"></div>
-    <noscript>
+    <div id="root">
       <main>
         <h1>Plan a session, then get out of the way.</h1>
         <p>
           Focus Flow helps you plan focused work, run a session timer, capture
           distractions, and review your progress.
         </p>
-        <a href="/dashboard">Open Focus Flow</a>
+        <nav aria-label="Primary navigation">
+          <a href="/dashboard">Open Focus Flow</a>
+          <a href="/group-sessions">Group Sessions</a>
+          <a href="/create-group-session">Create a group session</a>
+        </nav>
       </main>
-    </noscript>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

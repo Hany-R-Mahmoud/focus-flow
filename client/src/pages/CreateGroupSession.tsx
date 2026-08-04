@@ -10,10 +10,7 @@ import { toast } from "sonner";
 import { createGroupSession } from "@/lib/db";
 import { saveDisplayName } from "@/lib/supabase";
 import { syncGroupSessionToCloud } from "@/lib/cloudGroupSessions";
-import {
-  isSupabaseConfigured,
-  isTurnstileConfigured,
-} from "@/lib/supabase";
+import { isSupabaseConfigured, isTurnstileConfigured } from "@/lib/supabase";
 import {
   generateSessionId,
   generateGroupSessionLink,

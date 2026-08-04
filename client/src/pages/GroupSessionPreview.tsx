@@ -448,9 +448,7 @@ export default function GroupSessionPreview() {
       <Dialog open={showJoinDialog} onOpenChange={setShowJoinDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="pr-8">
-              Join {session.title}
-            </DialogTitle>
+            <DialogTitle className="pr-8">Join {session.title}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -465,7 +463,8 @@ export default function GroupSessionPreview() {
                 value={participantName}
                 onChange={event => setParticipantName(event.target.value)}
                 placeholder="e.g., Hany"
-                autoFocus required
+                autoFocus
+                required
                 maxLength={50}
               />
               <p className="text-xs text-muted-foreground mt-1">
