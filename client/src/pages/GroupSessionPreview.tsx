@@ -43,6 +43,7 @@ import {
 } from "@/lib/groupSession";
 import type { GroupSessionPayload } from "@/lib/groupSession";
 import { formatTime } from "@/lib/time";
+import { reportMonitoringError, trackMonitoringEvent } from "@/lib/monitoring";
 import { AlertCircle, Users, Link as LinkIcon } from "lucide-react";
 
 export default function GroupSessionPreview() {
@@ -271,10 +272,15 @@ export default function GroupSessionPreview() {
       }
       setShowJoinDialog(false);
       setPendingPayload(null);
+      trackMonitoringEvent("group_session_joined", {
+        cloud_configured: isSupabaseConfigured,
+        has_invitation_payload: Boolean(pendingPayload),
+      });
       toast.success("Session joined!");
       setLocation(`/active-group/${joinedSession.id}`);
     } catch (error) {
       releaseActiveGroupSession(activeSessionKey);
+      reportMonitoringError(error);
       console.error("Error joining session:", error);
       toast.error(getGroupJoinErrorMessage(error));
     } finally {
@@ -448,9 +454,7 @@ export default function GroupSessionPreview() {
       <Dialog open={showJoinDialog} onOpenChange={setShowJoinDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="pr-8">
-              Join {session.title}
-            </DialogTitle>
+            <DialogTitle className="pr-8">Join {session.title}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -465,7 +469,8 @@ export default function GroupSessionPreview() {
                 value={participantName}
                 onChange={event => setParticipantName(event.target.value)}
                 placeholder="e.g., Hany"
-                autoFocus required
+                autoFocus
+                required
                 maxLength={50}
               />
               <p className="text-xs text-muted-foreground mt-1">

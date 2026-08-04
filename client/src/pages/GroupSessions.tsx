@@ -43,6 +43,7 @@ import {
 } from "@/lib/activeGroupSession";
 import ParticipantAvatars from "@/components/ParticipantAvatars";
 import ParticipantBadge from "@/components/ParticipantBadge";
+import { reportMonitoringError, trackMonitoringEvent } from "@/lib/monitoring";
 import { Play, Trash2, Save, Users, Plus } from "lucide-react";
 
 export default function GroupSessions() {
@@ -177,6 +178,10 @@ export default function GroupSessions() {
         await saveDisplayName(name);
         addParticipant(joinSession.id, name);
       }
+      trackMonitoringEvent("group_session_joined", {
+        cloud_configured: isSupabaseConfigured,
+        has_invitation_payload: Boolean(joinSession.payloadSessionId),
+      });
       toast.success("You've joined the session!");
       setShowJoinDialog(false);
       setJoinSession(null);
@@ -184,6 +189,7 @@ export default function GroupSessions() {
       setLocation(`/active-group/${joinSession.id}`);
     } catch (error) {
       releaseActiveGroupSession(activeSessionKey);
+      reportMonitoringError(error);
       const message = error instanceof Error ? error.message : "Unknown error";
       console.error(`Error joining session. ${message}`);
       toast.error(getGroupJoinErrorMessage(error));

@@ -40,6 +40,7 @@ import {
 } from "@/lib/sessionFeedback";
 import { showSessionEndingNotification } from "@/lib/notifications";
 import { sessionPresets } from "@/lib/sessionPresets";
+import { reportMonitoringError, trackMonitoringEvent } from "@/lib/monitoring";
 
 export default function ActiveSession() {
   const [match, params] = useRoute("/session/:id");
@@ -134,7 +135,8 @@ export default function ActiveSession() {
       }
     }
 
-    loadSession().catch(() => {
+    loadSession().catch(error => {
+      reportMonitoringError(error);
       toast.error("Failed to load session");
       setIsLoading(false);
     });
@@ -192,6 +194,7 @@ export default function ActiveSession() {
         toast.success("Session resumed");
       }
     } catch (err) {
+      reportMonitoringError(err);
       toast.error("Failed to update session");
     }
   }
@@ -249,7 +252,12 @@ export default function ActiveSession() {
       setSession(newSession);
       setTemplate(selectedTemplate);
       setIsRunning(true);
-    } catch {
+      trackMonitoringEvent("focus_session_started", {
+        duration_minutes: setupDuration,
+        has_task_intention: Boolean(taskIntention.trim()),
+      });
+    } catch (error) {
+      reportMonitoringError(error);
       toast.error("Failed to start session");
     } finally {
       setIsStarting(false);
@@ -277,6 +285,7 @@ export default function ActiveSession() {
       setShowDistractionDialog(false);
       toast.success("Distraction logged");
     } catch (err) {
+      reportMonitoringError(err);
       toast.error("Failed to log distraction");
     }
   }
@@ -306,9 +315,14 @@ export default function ActiveSession() {
       if (preferences.personalNotifications) {
         showSessionEndingNotification(updatedSession.templateName, language);
       }
+      trackMonitoringEvent("focus_session_completed", {
+        duration_minutes: updatedSession.duration,
+        distraction_count: updatedSession.distractions.length,
+      });
       toast.success("Session completed!");
       setTimeout(() => setLocation("/history"), 1000);
     } catch (err) {
+      reportMonitoringError(err);
       toast.error("Failed to complete session");
     }
   }
@@ -342,7 +356,8 @@ export default function ActiveSession() {
       setIsRunning(false);
       toast.success("Session cancelled");
       setTimeout(() => setLocation("/history"), 1000);
-    } catch {
+    } catch (error) {
+      reportMonitoringError(error);
       toast.error("Failed to cancel session");
     }
   }
