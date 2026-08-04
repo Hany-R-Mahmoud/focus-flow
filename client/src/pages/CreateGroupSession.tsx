@@ -17,11 +17,6 @@ import {
   GroupSessionPayload,
   validatePayload,
 } from "@/lib/groupSession";
-import {
-  logMonitoring,
-  reportMonitoringError,
-  trackMonitoringEvent,
-} from "@/lib/monitoring";
 import { AlertCircle, Check, Copy, Eye, Share2 } from "lucide-react";
 
 export default function CreateGroupSession() {
@@ -160,9 +155,6 @@ export default function CreateGroupSession() {
         const message =
           cloudError instanceof Error ? cloudError.message : "Unknown error";
         console.warn(`Cloud group-session sync unavailable. ${message}`);
-        logMonitoring("warn", "Cloud group-session sync unavailable", {
-          cloud_configured: isSupabaseConfigured,
-        });
         if (isSupabaseConfigured) {
           toast.error(
             "Could not publish the session to Supabase. No invite link was created."
@@ -176,16 +168,8 @@ export default function CreateGroupSession() {
       setGeneratedLink(link);
       setPayload(newPayload);
 
-      trackMonitoringEvent("group_session_created", {
-        focus_minutes: newPayload.focusMinutes,
-        break_minutes: newPayload.breakMinutes || 0,
-        cloud_configured: isSupabaseConfigured,
-        has_meeting_url: Boolean(newPayload.meetingUrl),
-      });
-
       toast.success("Group session created!");
     } catch (error) {
-      reportMonitoringError(error);
       console.error("Error creating group session:", error);
       toast.error("Failed to create group session");
     } finally {

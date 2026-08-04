@@ -12,7 +12,6 @@ import { seedDatabase, initDB } from "@/lib/db";
 import SeoMetadata from "./components/SeoMetadata";
 import PwaInstallHelpDialog from "./components/PwaInstallHelpDialog";
 import PwaStatusBar from "./components/PwaStatusBar";
-import { reportMonitoringError } from "./lib/monitoring";
 
 const Home = lazy(() => import("./pages/Home"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -99,7 +98,6 @@ function App() {
       })
       .catch(error => {
         console.error("Failed to initialize local data", error);
-        reportMonitoringError(error);
         if (!cancelled) setStartupError("Local data could not be initialized.");
       });
 

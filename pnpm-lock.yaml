@@ -19,9 +19,6 @@ importers:
       '@fontsource-variable/geist':
         specifier: 5.3.0
         version: 5.3.0
-      '@heronsignal/web':
-        specifier: ^0.1.0
-        version: 0.1.0
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.64.0(react@19.2.1))
@@ -817,9 +814,6 @@ packages:
 
   '@fontsource-variable/geist@5.3.0':
     resolution: {integrity: sha512-j0m+vLQuG5XAYoHtGCVu0spvlGreR3EzpECUVzkFmI1mTVnAO38l/NEPDCFgZ177JxzYJCLSmTQibIiYPilGrA==}
-
-  '@heronsignal/web@0.1.0':
-    resolution: {integrity: sha512-uuKH2K1bdKMnqBlfJJ+TjT8Y6VhYbYvnAeHASaBWeH37+/ckjrFfOF7bLa0H2eg1EiOkoWEv4BthsD+OAG5Kew==}
 
   '@hookform/resolvers@5.2.2':
     resolution: {integrity: sha512-A/IxlMLShx3KjV/HeTcTfaMxdwy690+L/ZADoeaTltLx+CVuzkeVIPuybK3jrRfw7YZnmdKsVVHAlEPIAEUNlA==}
@@ -5856,8 +5850,6 @@ snapshots:
   '@floating-ui/utils@0.2.10': {}
 
   '@fontsource-variable/geist@5.3.0': {}
-
-  '@heronsignal/web@0.1.0': {}
 
   '@hookform/resolvers@5.2.2(react-hook-form@7.64.0(react@19.2.1))':
     dependencies:
