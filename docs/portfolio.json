@@ -60,6 +60,10 @@
       "ar": "تفضيلات جلسة التركيز: أبقِ الشاشة مضاءة اختياريًا وشغّل نغمة هادئة أو اهتزازًا واستقبل إشعارًا عند انتهاء الجلسة الشخصية"
     },
     {
+      "en": "Active Session Recovery: Reopen an in-progress personal session from the dashboard or session history",
+      "ar": "استعادة الجلسة النشطة: أعد فتح جلسة شخصية قيد التنفيذ من لوحة التحكم أو سجل الجلسات"
+    },
+    {
       "en": "30-Day Activity Review: View completed focus time by local calendar day without streaks or gamification",
       "ar": "مراجعة نشاط 30 يومًا: اعرض وقت التركيز المكتمل حسب اليوم المحلي دون سلاسل أو عناصر تحفيز لعبية"
     },

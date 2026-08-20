@@ -11,8 +11,10 @@ import {
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useLocale } from "@/contexts/LocaleContext";
+import { useLocation } from "wouter";
 
 export default function SessionHistory() {
+  const [, setLocation] = useLocation();
   const { language, t } = useLocale();
   const [sessions, setSessions] = useState<FocusSession[]>([]);
   const [filter, setFilter] = useState<"all" | "completed" | "abandoned">(
@@ -129,6 +131,17 @@ export default function SessionHistory() {
                   <p className="text-xs text-muted-foreground mb-4">
                     {session.distractions.length} distractions
                   </p>
+                  {(session.status === "active" ||
+                    session.status === "paused") && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mb-2"
+                      onClick={() => setLocation(`/session/${session.id}`)}
+                    >
+                      {t("dashboard.openSession")}
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"

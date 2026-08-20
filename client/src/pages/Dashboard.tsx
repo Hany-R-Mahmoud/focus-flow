@@ -29,6 +29,7 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { language, t } = useLocale();
   const [sessions, setSessions] = useState<FocusSession[]>([]);
+  const [activeSession, setActiveSession] = useState<FocusSession | null>(null);
   const [todayReview, setTodayReview] = useState<DailyReview | null>(null);
   const [upcomingGroupSessions, setUpcomingGroupSessions] = useState<
     GroupSession[]
@@ -47,7 +48,18 @@ export default function Dashboard() {
       await initDB();
       const allSessions = await getSessions();
       if (cancelled) return;
-      setSessions(allSessions.slice(0, 5));
+      const currentSession = allSessions.find(
+        session => session.status === "active" || session.status === "paused"
+      );
+      setActiveSession(currentSession ?? null);
+      setSessions(
+        allSessions
+          .filter(
+            session =>
+              session.status !== "active" && session.status !== "paused"
+          )
+          .slice(0, 5)
+      );
 
       const reviews = await getReviews();
       const today = getTodayString();
@@ -142,6 +154,31 @@ export default function Dashboard() {
           </Button>
         </div>
       </div>
+
+      {activeSession && (
+        <Card className="mb-8 border-2 border-[var(--color-teal)]/40 bg-[var(--surface-accent)] p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-medium text-[var(--color-teal-foreground)]">
+                {t("dashboard.activeSession")}
+              </p>
+              <h2 className="mt-1 text-xl font-bold text-foreground">
+                {activeSession.templateName}
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {activeSession.taskIntention || t("history.noTask")}
+              </p>
+            </div>
+            <Button
+              className="gap-2 bg-[var(--color-teal)] text-white hover:bg-[var(--color-teal-dark)]"
+              onClick={() => setLocation(`/session/${activeSession.id}`)}
+            >
+              <Play size={18} />
+              {t("dashboard.openSession")}
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
