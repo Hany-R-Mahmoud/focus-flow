@@ -24,12 +24,15 @@ import {
 } from "@/lib/groupSession";
 import { formatTime } from "@/lib/time";
 import { useLocale } from "@/contexts/LocaleContext";
+import SessionEndedNotice from "@/components/SessionEndedNotice";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { language, t } = useLocale();
   const [sessions, setSessions] = useState<FocusSession[]>([]);
   const [activeSession, setActiveSession] = useState<FocusSession | null>(null);
+  const [timerEndedSession, setTimerEndedSession] =
+    useState<FocusSession | null>(null);
   const [todayReview, setTodayReview] = useState<DailyReview | null>(null);
   const [upcomingGroupSessions, setUpcomingGroupSessions] = useState<
     GroupSession[]
@@ -52,6 +55,13 @@ export default function Dashboard() {
         session => session.status === "active" || session.status === "paused"
       );
       setActiveSession(currentSession ?? null);
+      setTimerEndedSession(
+        allSessions.find(
+          session =>
+            session.status === "completed" &&
+            session.completionReason === "timer"
+        ) ?? null
+      );
       setSessions(
         allSessions
           .filter(
@@ -178,6 +188,17 @@ export default function Dashboard() {
             </Button>
           </div>
         </Card>
+      )}
+
+      {timerEndedSession && (
+        <SessionEndedNotice
+          title={t("dashboard.sessionEndedTitle")}
+          description={t("dashboard.sessionEndedDescription", {
+            title: timerEndedSession.templateName,
+          })}
+          actionLabel={t("history.viewDetails")}
+          onAction={() => setLocation(`/session/${timerEndedSession.id}`)}
+        />
       )}
 
       {/* Stats Grid */}

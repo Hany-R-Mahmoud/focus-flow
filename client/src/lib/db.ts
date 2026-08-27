@@ -42,6 +42,7 @@ export interface FocusSession {
   outcome: string;
   distractions: Distraction[];
   status: "active" | "paused" | "completed" | "abandoned";
+  completionReason?: "manual" | "timer";
   createdAt: number;
 }
 

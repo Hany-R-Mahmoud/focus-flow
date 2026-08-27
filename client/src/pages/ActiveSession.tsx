@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRoute, useLocation } from "wouter";
 import {
   getSession,
@@ -40,7 +40,12 @@ import {
 } from "@/lib/sessionFeedback";
 import { showSessionEndingNotification } from "@/lib/notifications";
 import { sessionPresets } from "@/lib/sessionPresets";
-import { isClosedSessionStatus } from "@/lib/sessionState";
+import {
+  getSessionEndTime,
+  isClosedSessionStatus,
+  shouldAutoCompleteSession,
+} from "@/lib/sessionState";
+import SessionEndedNotice from "@/components/SessionEndedNotice";
 
 export default function ActiveSession() {
   const [match, params] = useRoute("/session/:id");
@@ -68,6 +73,7 @@ export default function ActiveSession() {
   const [taskIntention, setTaskIntention] = useState("");
   const [outcome, setOutcome] = useState("");
   const [showOutcomeDialog, setShowOutcomeDialog] = useState(false);
+  const completionInFlight = useRef(false);
   const isSessionActive = Boolean(
     session && (session.status === "active" || session.status === "paused")
   );
@@ -148,22 +154,27 @@ export default function ActiveSession() {
     if (!session) return;
 
     const updateElapsed = () => {
-      setElapsedTime(
-        getElapsedSessionTime(
-          session.startTime,
-          session.pausedTime,
-          session.status,
-          session.endTime,
-          session.pausedAt
-        )
+      const elapsed = getElapsedSessionTime(
+        session.startTime,
+        session.pausedTime,
+        session.status,
+        session.endTime,
+        session.pausedAt
       );
+      setElapsedTime(elapsed);
+
+      const totalDuration =
+        (session.duration ?? template?.duration ?? 0) * 60 * 1000;
+      if (shouldAutoCompleteSession(session.status, elapsed, totalDuration)) {
+        void handleComplete("timer");
+      }
     };
     updateElapsed();
     if (!isRunning) return;
 
     const interval = setInterval(updateElapsed, 250);
     return () => clearInterval(interval);
-  }, [isRunning, session]);
+  }, [isRunning, session, template]);
 
   async function handlePauseResume() {
     if (!session) return;
@@ -261,7 +272,10 @@ export default function ActiveSession() {
   }
 
   async function handleAddDistraction() {
-    if (!session) return;
+    if (!session || !isSessionActive) {
+      setShowDistractionDialog(false);
+      return;
+    }
 
     try {
       const updatedSession = await updateSession(session.id, {
@@ -285,8 +299,18 @@ export default function ActiveSession() {
     }
   }
 
-  async function handleComplete() {
-    if (!session) return;
+  async function handleComplete(
+    completionReason: "manual" | "timer" = "manual"
+  ) {
+    if (
+      !session ||
+      completionInFlight.current ||
+      isClosedSessionStatus(session.status)
+    ) {
+      return;
+    }
+
+    completionInFlight.current = true;
 
     try {
       const now = Date.now();
@@ -294,25 +318,42 @@ export default function ActiveSession() {
         session.status === "paused" && session.pausedAt
           ? Math.max(0, now - session.pausedAt)
           : 0;
+      const durationMinutes = session.duration ?? template?.duration ?? 0;
       const updatedSession = await updateSession(session.id, {
-        endTime: Date.now(),
+        endTime:
+          completionReason === "timer"
+            ? getSessionEndTime(
+                session.startTime,
+                durationMinutes,
+                session.pausedTime + pausedDuration
+              )
+            : now,
         status: "completed",
         pausedTime: session.pausedTime + pausedDuration,
         pausedAt: null,
         taskIntention,
         outcome,
+        completionReason,
       });
       setSession(updatedSession);
       setIsRunning(false);
+      setShowDistractionDialog(false);
       setShowOutcomeDialog(false);
       if (preferences.completionSound) playCompletionChime();
       if (preferences.completionHaptics) triggerCompletionHaptic();
       if (preferences.personalNotifications) {
         showSessionEndingNotification(updatedSession.templateName, language);
       }
-      toast.success("Session completed!");
-      setTimeout(() => setLocation("/history"), 1000);
+      toast.success(
+        completionReason === "timer"
+          ? t("session.endedToast")
+          : "Session completed!"
+      );
+      if (completionReason === "manual") {
+        setTimeout(() => setLocation("/history"), 1000);
+      }
     } catch {
+      completionInFlight.current = false;
       toast.error("Failed to complete session");
     }
   }
@@ -546,6 +587,15 @@ export default function ActiveSession() {
         )}
       </div>
 
+      {isClosedSession && (
+        <SessionEndedNotice
+          title={t("session.endedTitle")}
+          description={t("session.endedDescription")}
+          actionLabel={t("history.viewDetails")}
+          onAction={() => setLocation("/history")}
+        />
+      )}
+
       <div className="p-8 mb-8 text-center bg-gradient-to-br from-[var(--color-teal-light)] dark:from-muted to-background rounded-lg border border-border">
         <div className="mb-6">
           <div className="text-6xl font-bold text-[var(--color-teal-foreground)] font-mono mb-2">
@@ -688,7 +738,7 @@ export default function ActiveSession() {
             </div>
             <Button
               className="w-full bg-green-700 hover:bg-green-800 text-white"
-              onClick={handleComplete}
+              onClick={() => void handleComplete()}
             >
               {t("session.finish")}
             </Button>

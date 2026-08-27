@@ -32,6 +32,10 @@
       "ar": "Active Timer: Start sessions with a countdown timer, pause/resume, and track elapsed time"
     },
     {
+      "en": "Automatic Timer Completion: Complete personal sessions when the timer reaches zero, stop distraction logging, and show an ended-session notice",
+      "ar": "الإنهاء التلقائي للمؤقت: أكمل الجلسات الشخصية عند وصول المؤقت إلى الصفر وأوقف تسجيل التشتت واعرض إشعار انتهاء الجلسة"
+    },
+    {
       "en": "Distraction Capture: Log distractions during sessions (phone, email, social media, thoughts, other)",
       "ar": "Distraction Capture: Log distractions during sessions (phone, email, social media, thoughts, other)"
     },
