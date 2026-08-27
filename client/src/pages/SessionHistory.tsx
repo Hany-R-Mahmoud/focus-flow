@@ -8,10 +8,11 @@ import {
   calculateSessionDuration,
   formatDuration,
 } from "@/lib/time";
-import { Trash2 } from "lucide-react";
+import { FileText, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useLocation } from "wouter";
+import { isClosedSessionStatus } from "@/lib/sessionState";
 
 export default function SessionHistory() {
   const [, setLocation] = useLocation();
@@ -131,17 +132,17 @@ export default function SessionHistory() {
                   <p className="text-xs text-muted-foreground mb-4">
                     {session.distractions.length} distractions
                   </p>
-                  {(session.status === "active" ||
-                    session.status === "paused") && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mb-2"
-                      onClick={() => setLocation(`/session/${session.id}`)}
-                    >
-                      {t("dashboard.openSession")}
-                    </Button>
-                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mb-2 gap-2"
+                    onClick={() => setLocation(`/session/${session.id}`)}
+                  >
+                    <FileText size={16} />
+                    {isClosedSessionStatus(session.status)
+                      ? t("history.viewDetails")
+                      : t("dashboard.openSession")}
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"

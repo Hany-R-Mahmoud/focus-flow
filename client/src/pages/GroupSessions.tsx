@@ -43,7 +43,7 @@ import {
 } from "@/lib/activeGroupSession";
 import ParticipantAvatars from "@/components/ParticipantAvatars";
 import ParticipantBadge from "@/components/ParticipantBadge";
-import { Play, Trash2, Save, Users, Plus } from "lucide-react";
+import { FileText, Play, Trash2, Save, Users, Plus } from "lucide-react";
 
 export default function GroupSessions() {
   const [, setLocation] = useLocation();
@@ -317,6 +317,17 @@ export default function GroupSessions() {
                   >
                     <Play size={18} />
                     Join Session
+                  </Button>
+                )}
+
+                {status === "ended" && (
+                  <Button
+                    onClick={() => setLocation(`/active-group/${session.id}`)}
+                    variant="outline"
+                    className="flex-1 gap-2"
+                  >
+                    <FileText size={18} />
+                    View details
                   </Button>
                 )}
 

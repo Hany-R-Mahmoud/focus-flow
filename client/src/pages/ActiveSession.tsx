@@ -40,6 +40,7 @@ import {
 } from "@/lib/sessionFeedback";
 import { showSessionEndingNotification } from "@/lib/notifications";
 import { sessionPresets } from "@/lib/sessionPresets";
+import { isClosedSessionStatus } from "@/lib/sessionState";
 
 export default function ActiveSession() {
   const [match, params] = useRoute("/session/:id");
@@ -69,6 +70,9 @@ export default function ActiveSession() {
   const [showOutcomeDialog, setShowOutcomeDialog] = useState(false);
   const isSessionActive = Boolean(
     session && (session.status === "active" || session.status === "paused")
+  );
+  const isClosedSession = Boolean(
+    session && isClosedSessionStatus(session.status)
   );
   const screenWakeLockActive = useScreenWakeLock(
     preferences.keepScreenAwake && isSessionActive
@@ -545,10 +549,10 @@ export default function ActiveSession() {
       <div className="p-8 mb-8 text-center bg-gradient-to-br from-[var(--color-teal-light)] dark:from-muted to-background rounded-lg border border-border">
         <div className="mb-6">
           <div className="text-6xl font-bold text-[var(--color-teal-foreground)] font-mono mb-2">
-            {formatTime(remainingTime)}
+            {formatTime(isClosedSession ? elapsedTime : remainingTime)}
           </div>
           <p className="text-sm text-muted-foreground">
-            {t("session.remaining")}
+            {isClosedSession ? t("session.elapsed") : t("session.remaining")}
           </p>
         </div>
 
@@ -588,15 +592,17 @@ export default function ActiveSession() {
               </>
             )}
           </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            className="gap-2"
-            onClick={() => setShowDistractionDialog(true)}
-          >
-            <AlertCircle size={20} />
-            {t("session.logDistraction")}
-          </Button>
+          {isSessionActive && (
+            <Button
+              size="lg"
+              variant="outline"
+              className="gap-2"
+              onClick={() => setShowDistractionDialog(true)}
+            >
+              <AlertCircle size={20} />
+              {t("session.logDistraction")}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -630,28 +636,40 @@ export default function ActiveSession() {
           value={taskIntention}
           onChange={e => setTaskIntention(e.target.value)}
           placeholder={t("session.intentionPlaceholder")}
+          readOnly={isClosedSession}
           className="mb-4"
         />
       </div>
 
-      <div className="flex gap-3">
-        <Button
-          className="flex-1 gap-2 bg-green-700 hover:bg-green-800 text-white"
-          size="lg"
-          onClick={() => setShowOutcomeDialog(true)}
-        >
-          <Square size={20} />
-          {t("session.complete")}
-        </Button>
-        <Button
-          variant="destructive"
-          size="lg"
-          onClick={handleCancel}
-          disabled={session.status !== "active" && session.status !== "paused"}
-        >
-          {t("session.cancel")}
-        </Button>
-      </div>
+      {isClosedSession ? (
+        <div className="p-6 mb-8 bg-card border border-border rounded-lg">
+          <Label className="font-bold mb-2 block">{t("session.outcome")}</Label>
+          <p className="text-sm text-muted-foreground">
+            {outcome || t("history.noOutcome")}
+          </p>
+        </div>
+      ) : (
+        <div className="flex gap-3">
+          <Button
+            className="flex-1 gap-2 bg-green-700 hover:bg-green-800 text-white"
+            size="lg"
+            onClick={() => setShowOutcomeDialog(true)}
+          >
+            <Square size={20} />
+            {t("session.complete")}
+          </Button>
+          <Button
+            variant="destructive"
+            size="lg"
+            onClick={handleCancel}
+            disabled={
+              session.status !== "active" && session.status !== "paused"
+            }
+          >
+            {t("session.cancel")}
+          </Button>
+        </div>
+      )}
 
       <Dialog open={showOutcomeDialog} onOpenChange={setShowOutcomeDialog}>
         <DialogContent>

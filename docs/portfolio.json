@@ -64,6 +64,10 @@
       "ar": "استعادة الجلسة النشطة: أعد فتح جلسة شخصية قيد التنفيذ من لوحة التحكم أو سجل الجلسات"
     },
     {
+      "en": "Ended Session Details: Reopen completed or abandoned personal sessions to review logged distractions and outcomes",
+      "ar": "تفاصيل الجلسات المنتهية: أعد فتح الجلسات الشخصية المكتملة أو الملغاة لمراجعة التشتتات والنتائج المسجلة"
+    },
+    {
       "en": "30-Day Activity Review: View completed focus time by local calendar day without streaks or gamification",
       "ar": "مراجعة نشاط 30 يومًا: اعرض وقت التركيز المكتمل حسب اليوم المحلي دون سلاسل أو عناصر تحفيز لعبية"
     },
