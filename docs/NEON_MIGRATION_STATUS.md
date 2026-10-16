@@ -1,32 +1,39 @@
-# Focus Flow → Neon migration: implementation status
+# Focus Flow → Neon migration status
 
-Last verified: **2026-10-16**.
+Updated **2026-10-16**. Current status: **code implementation completed and independently built; production release pending external readiness and owner approval**.
 
-## Current result
-**Implementation committed on branch `migration/neon-backend`; Vercel Preview build READY. Production is unchanged.** This report replaces the earlier provisioning-only assessment.
+## Changes implemented
 
-- Neon Free Postgres database `focus_flow` provisioned in Frankfurt (project `bitter-heart-23681290`).
-- Managed Better Auth provisioned and named **Focus Flow**, supporting Email/Password. Google has Neon-shared **development** OAuth, not production custom credentials. Password reset requires testing and custom SMTP before production.
-- Neon Data API provisioned; guarded collaboration schema and functions applied and versioned under `neon/migrations/0001_group_collaboration.sql`.
-- New auth UI with English/Arabic login, sign up, forgot/reset password, email verification and Google sign-in action; guest mode stays available without an account.
-- AuthContext and Neon SDK integrated; Supabase JS client removed from active source and package manifest.
-- Personal templates, timers, sessions, reviews and distractions remain in local IndexedDB for **both guests and signed-in users**. No account-based cloud sync for personal data is promised or implemented.
-- Cloud group sessions via signed-in Neon Data API and database-level rate limit, RLS/membership checks, polling heartbeat online roster (no Supabase Realtime). Guests use original local-mode shareable group invitations.
-- Vercel preview env includes `VITE_NEON_URL` public database HTTPS URL; production environment unchanged.
-- Validated preview deployment `dpl_Army6si2R93SEa9NUi38SaMmypJW` (commit `c7efb093...`) `READY`. Logs confirm `pnpm check`, **37 passing Vitest tests** across 11 files, and `pnpm build`, producing auth/group/frontend assets.
+- Migrated active frontend Supabase SDK integrations to Neon Managed Better Auth + Data API.
+- Full English/Arabic account entry with Email/Password, Google Sign-In, numeric verification-code entry and resend, password reset, and Continue as Guest.
+- Guest timers, local history and private focus reviews remain in IndexedDB; account authentication does not silently sync private data or delete guest history.
+- Signed-in Group Sessions use Neon Postgres member/owner security, SQL rate limiting and heartbeat presence. Guest/local invitation sharing stays available without a network account.
+- Separate preview and production Neon projects; both enabled for Auth and Data API with group migration applied. Verified RLS and RPC grants.
+- Production `VITE_NEON_URL` preconfigured on Vercel. Existing production deployment and old URL untouched.
+- Fixed OAuth dashboard return, authenticated invite loading, presence reconnection and failed cloud create cleanup.
+- Updated lockfile and committed frozen pnpm install and Neon endpoint build guard.
 
-## Remaining gates before production launch
-1. Codex Google Cloud Console configuration and injecting custom OAuth credentials directly into Neon Auth, using `docs/CODEX_GOOGLE_CLOUD_HANDOVER.md`.
-2. Custom SMTP (Neon Auth default shared sender is only for testing) and email verification/password reset E2E.
-3. Multiple-account browser E2E for auth + group collaboration + guest data continuity, SQL RLS/authorization checks.
-4. Regenerate **`pnpm-lock.yaml`** to pin the new Neon JS SDK, restore frozen lockfile install in `vercel.json`. Current preview install uses `--no-frozen-lockfile` only as temporary compatibility workaround.
-5. Establish isolated preview Auth environment: cloned Neon child branch has inherited auth schema but cannot provision its own Neon Auth. Current Vercel preview points to primary Neon database.
-6. Plan reviewed merge, production Vercel env cutover and tests, plus rollback.
+## Current evidence
+
+- Latest source code **`9643e064`**: isolated VM `pnpm install --frozen-lockfile`, `pnpm check`, **46/46 Vitest**, **4/4 environment guard tests**, and `pnpm build` all passed. The VM was shut down.
+- Older frozen-lockfile Preview commit `6d81d5a2` reached Vercel **READY**.
+- The owner previously confirmed a successful Preview Google OAuth sign-in and dashboard redirect. The most recent code modifications still require a new end-to-end browser trial.
+- **Vercel API daily Preview limit**: newest Preview deployment request was rejected with HTTP 402 (100 deployments/day); do not assume new code is deployed.
+- Latest actual Production deployment remains the previous `main` commit. No merge or cutover performed.
+
+## Items before Production launch
+
+- Configure custom SMTP in Production Neon Auth, test code email verification and password reset, and enable required email verification; shared SMTP remains configured now.
+- Google consent last seen in Testing mode; publish for non-test users through Google Cloud Console.
+- Disable localhost in Production Neon Auth after validating production trusted domains.
+- Two-account Preview E2E for connected Group Sessions and guest-account data continuity.
+- Retry newest Vercel Preview after quota reset, then obtain owner's final PR approval/merge.
 
 ## Links
-- Preview: https://focus-flow-jbz616ka5-hany-mahmouds-projects.vercel.app
-- Branch: https://github.com/Hany-R-Mahmoud/focus-flow/tree/migration/neon-backend
-- Checklist: [NEON_GO_LIVE_CHECKLIST.md](./NEON_GO_LIVE_CHECKLIST.md)
-- Codex handover: [CODEX_GOOGLE_CLOUD_HANDOVER.md](./CODEX_GOOGLE_CLOUD_HANDOVER.md)
 
-**Do not describe production migration as complete without the outstanding acceptance tests and credentials.**
+- [PR #2](https://github.com/Hany-R-Mahmoud/focus-flow/pull/2)
+- [Production readiness checklist](./NEON_GO_LIVE_CHECKLIST.md)
+- [Detailed production release handoff](./PRODUCTION_RELEASE_HANDOFF.md)
+- [Codex final external setup handoff](./CODEX_FINAL_RELEASE_HANDOVER.md)
+
+The canonical production URL is **https://focus-session-flow.vercel.app**. It will remain the same after a verified Production cutover using the existing Vercel project. Historical Supabase data is intentionally not migrated.
