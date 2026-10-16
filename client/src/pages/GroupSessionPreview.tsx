@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { TurnstileChallenge } from "@/components/TurnstileChallenge";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import {
   createGroupSession,
@@ -22,11 +23,11 @@ import type { GroupSession } from "@/lib/db";
 import { addParticipant } from "@/lib/participants";
 import {
   getGroupJoinErrorMessage,
-  isSupabaseConfigured,
+  isNeonConfigured,
   isTurnstileConfigured,
   normalizeDisplayName,
   saveDisplayName,
-} from "@/lib/supabase";
+} from "@/lib/neon";
 import {
   cloudGroupSessionToLocal,
   getCloudGroupSessionByPayloadId,
@@ -46,6 +47,8 @@ import { formatTime } from "@/lib/time";
 import { AlertCircle, Users, Link as LinkIcon } from "lucide-react";
 
 export default function GroupSessionPreview() {
+  const { user } = useAuth();
+  const isSupabaseConfigured = isNeonConfigured && Boolean(user);
   const [, setLocation] = useLocation();
   const [session, setSession] = useState<GroupSession | null>(null);
   const [loading, setLoading] = useState(true);
