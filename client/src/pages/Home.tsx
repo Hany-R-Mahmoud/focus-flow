@@ -325,12 +325,14 @@ export default function Home() {
 
       <footer className="container flex flex-col gap-3 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
         <p>{t("home.footer")}</p>
-        <a
-          href="/settings"
-          className="w-fit underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-teal)] focus-visible:ring-offset-4"
-        >
-          {t("home.privacy")}
-        </a>
+        <nav className="flex flex-wrap items-center gap-5" aria-label="Legal information">
+          <a href="/privacy.html" className="w-fit underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-teal)] focus-visible:ring-offset-4">
+            {language === "ar" ? "سياسة الخصوصية" : "Privacy Policy"}
+          </a>
+          <a href="/terms.html" className="w-fit underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-teal)] focus-visible:ring-offset-4">
+            {language === "ar" ? "شروط الاستخدام" : "Terms of Service"}
+          </a>
+        </nav>
       </footer>
       <StandaloneVisitorCounter appSlug="focus-session-flow" label="VISITORS" />
     </div>
