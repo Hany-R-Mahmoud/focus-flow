@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { neon } from "@/lib/neon";
+import { neon, setActiveCloudSession } from "@/lib/neon";
 
 export interface FocusUser {
   id: string;
@@ -26,15 +26,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     if (!neon) {
       setUser(null);
+      setActiveCloudSession(false);
       setReady(true);
       return;
     }
     try {
       const result = await neon.auth.getSession();
       setUser((result.data?.user ?? null) as FocusUser | null);
+      setActiveCloudSession(Boolean(result.data?.user));
     } catch (error) {
       console.warn("Could not restore account session", error);
       setUser(null);
+      setActiveCloudSession(false);
     } finally {
       setReady(true);
     }
@@ -56,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     // Do not erase IndexedDB: personal local data belongs to this browser.
     setUser(null);
+    setActiveCloudSession(false);
   }, []);
 
   const value = useMemo<AuthState>(() => ({
