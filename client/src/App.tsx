@@ -4,7 +4,8 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LocaleProvider, useLocale } from "./contexts/LocaleContext";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { shouldRecoverGoogleOAuthReturn } from "./lib/googleOAuthReturn";
 import Sidebar from "./components/Sidebar";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useLocation } from "wouter";
@@ -67,6 +68,28 @@ function Router() {
   );
 }
 
+function GoogleOAuthReturnRecovery() {
+  const [location, navigate] = useLocation();
+  const { ready, user } = useAuth();
+
+  useEffect(() => {
+    // An ordinary signed-in visitor at "/" must still see the landing page.
+    // Recover only an explicit Google sign-in attempt after session validation.
+    if (!ready) return;
+
+    try {
+      if (shouldRecoverGoogleOAuthReturn(location, Boolean(user), window.sessionStorage)) {
+        navigate("/dashboard", { replace: true });
+      }
+    } catch {
+      // Browser storage may be unavailable in restrictive privacy modes.
+      // Login itself remains available with Neon Auth's direct callbackURL.
+    }
+  }, [location, navigate, ready, user]);
+
+  return null;
+}
+
 function AppContent() {
   // Initialize reminders
   useSessionReminders();
@@ -114,6 +137,7 @@ function App() {
     <ThemeProvider defaultTheme="light" switchable>
       <LocaleProvider>
         <AuthProvider>
+        <GoogleOAuthReturnRecovery />
         <SeoMetadata />
         <PwaStatusBar />
         <ErrorBoundary>
