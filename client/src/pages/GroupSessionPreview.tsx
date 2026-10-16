@@ -9,7 +9,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { TurnstileChallenge } from "@/components/TurnstileChallenge";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import {
@@ -24,7 +23,6 @@ import { addParticipant } from "@/lib/participants";
 import {
   getGroupJoinErrorMessage,
   isNeonConfigured,
-  isTurnstileConfigured,
   normalizeDisplayName,
   saveDisplayName,
 } from "@/lib/neon";
@@ -60,7 +58,6 @@ export default function GroupSessionPreview() {
     useState<GroupSessionPayload | null>(null);
   const [joining, setJoining] = useState(false);
   const [cloudRoomFound, setCloudRoomFound] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -221,7 +218,7 @@ export default function GroupSessionPreview() {
           ? await joinCloudGroupSession(
               pendingPayload.sessionId,
               name,
-              captchaToken ?? undefined
+              undefined
             )
           : null;
         const localSession = await getGroupSessionByPayloadId(
