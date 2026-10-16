@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm check && pnpm test && pnpm build",
+  "buildCommand": "node --test scripts/check-neon-env.test.mjs && node scripts/check-neon-env.mjs && pnpm check && pnpm test && pnpm build",
   "outputDirectory": "dist/public",
   "framework": "vite",
   "headers": [
