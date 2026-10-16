@@ -13,7 +13,7 @@ import { neon, neonAuthBaseUrl } from "@/lib/neon";
 import { clearGoogleOAuthStarted, markGoogleOAuthStarted } from "@/lib/googleOAuthReturn";
 
 type Mode = "login" | "signup" | "forgot" | "reset" | "verify";
-type CopyKey = "login" | "signup" | "forgot" | "reset" | "verify";
+const PENDING_EMAIL_KEY = "focusflow_pending_verification_email";
 
 const copy = {
   en: {
@@ -45,7 +45,11 @@ const copy = {
     resetDesc: "Choose a new password for your account.",
     resetButton: "Update password",
     verifyTitle: "Verify your email",
-    verifyDesc: "We sent a verification email. Check your inbox to finish setting up your account.",
+    verifyDesc: "Enter the verification code sent to your email. Codes expire after 15 minutes.",
+    verificationCode: "Verification code",
+    verifyCode: "Verify email address",
+    codeSent: "Verification code sent. Check your inbox.",
+    invalidCode: "Enter the verification code from your email.",
     resend: "Resend verification email",
     back: "Back to sign in",
     noAccount: "New to Focus Flow?",
@@ -94,7 +98,11 @@ const copy = {
     resetDesc: "اكتب كلمة مرور جديدة لحسابك.",
     resetButton: "تحديث كلمة المرور",
     verifyTitle: "تأكيد البريد الإلكتروني",
-    verifyDesc: "بعتنا لك رسالة تأكيد. افتح البريد الإلكتروني علشان تكمل.",
+    verifyDesc: "اكتب كود التأكيد اللي وصلك على البريد الإلكتروني. الكود صالح لمدة ١٥ دقيقة.",
+    verificationCode: "كود التأكيد",
+    verifyCode: "تأكيد البريد الإلكتروني",
+    codeSent: "بعتنا كود التأكيد. راجع بريدك الإلكتروني.",
+    invalidCode: "اكتب كود التأكيد اللي وصلك.",
     resend: "إعادة إرسال رسالة التأكيد",
     back: "الرجوع لتسجيل الدخول",
     noAccount: "لسه معندكش حساب؟",
@@ -143,6 +151,7 @@ export default function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -152,6 +161,17 @@ export default function AuthPage() {
     setMessage("");
     setError("");
   }, [mode]);
+
+  useEffect(() => {
+    if (mode !== "verify") return;
+    try {
+      const pendingEmail = window.sessionStorage.getItem(PENDING_EMAIL_KEY);
+      if (pendingEmail) setEmail(current => current || pendingEmail);
+      else if (user?.email) setEmail(current => current || user.email);
+    } catch {
+      if (user?.email) setEmail(current => current || user.email);
+    }
+  }, [mode, user?.email]);
 
   const isRegistration = mode === "signup";
   const isReset = mode === "reset";
@@ -181,7 +201,22 @@ export default function AuthPage() {
         const result = await neon.auth.signUp.email({ email, password, name: name.trim() || email.split("@")[0] });
         if (result.error) throw new Error(result.error.message);
         await refresh();
-        setMessage(c.created);
+        if (result.data?.user && !result.data.user.emailVerified) {
+          // The current Neon Auth setup uses email verification codes, not links.
+          // Preserve the email across the route change without placing it in a URL.
+          try { window.sessionStorage.setItem(PENDING_EMAIL_KEY, email); } catch { /* disabled storage */ }
+          try {
+            const sent = await neon.auth.emailOtp.sendVerificationOtp({
+              email, type: "email-verification",
+            });
+            if (sent.error) console.warn("Unable to send verification code", sent.error.message);
+          } catch (sendError) {
+            console.warn("Verification code delivery unavailable", sendError);
+          }
+          setLocation("/auth/verify");
+        } else {
+          setMessage(c.created);
+        }
       } else if (isSignIn) {
         const result = await neon.auth.signIn.email({ email, password });
         if (result.error) throw new Error(result.error.message);
@@ -205,14 +240,43 @@ export default function AuthPage() {
         setMessage(c.updated);
         setTimeout(() => setLocation("/auth/login"), 1100);
       } else if (isVerify) {
-        const result = await neon.auth.sendVerificationEmail({
-          email, callbackURL: window.location.origin + "/auth/verify",
-        });
+        const code = verificationCode.trim();
+        if (!/^\\d{4,10}$/.test(code)) throw new Error(c.invalidCode);
+        const result = await neon.auth.emailOtp.verifyEmail({ email, otp: code });
         if (result.error) throw new Error(result.error.message);
-        setMessage(c.sent);
+        setVerificationCode("");
+        try { window.sessionStorage.removeItem(PENDING_EMAIL_KEY); } catch { /* disabled storage */ }
+        await refresh();
+        setMessage(c.verified);
       }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Authentication failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resendVerificationCode() {
+    setMessage("");
+    setError("");
+    if (!neon) {
+      setError(c.unconfigured);
+      return;
+    }
+    if (!/^\\S+@\\S+\\.\\S+$/.test(email)) {
+      setError(c.invalid);
+      return;
+    }
+    setBusy(true);
+    try {
+      const sent = await neon.auth.emailOtp.sendVerificationOtp({
+        email, type: "email-verification",
+      });
+      if (sent.error) throw new Error(sent.error.message);
+      try { window.sessionStorage.setItem(PENDING_EMAIL_KEY, email); } catch { /* disabled storage */ }
+      setMessage(c.codeSent);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not send verification email");
     } finally {
       setBusy(false);
     }
@@ -317,6 +381,11 @@ export default function AuthPage() {
             <div className="space-y-5 rounded-2xl border bg-card p-6">
               <div className="flex items-center gap-3"><CheckCircle2 className="text-emerald-600" /><span className="font-medium">{c.loggedIn}</span></div>
               <p className="break-all text-sm text-muted-foreground">{user.email}</p>
+              {user.emailVerified === false && (
+                <a className="block text-sm font-medium text-[var(--color-teal-foreground)] hover:underline" href="/auth/verify">
+                  {c.verifyTitle}
+                </a>
+              )}
               <Button className="w-full" onClick={() => setLocation("/dashboard")}>{c.dashboard} <ArrowRight size={16} /></Button>
               <Button className="w-full" variant="outline" onClick={() => void signOut()}>{c.signOut}</Button>
             </div>
@@ -343,6 +412,23 @@ export default function AuthPage() {
                   <label htmlFor="auth-email" className="block text-sm font-medium">{c.email}</label>
                   <div className="relative"><Mail size={17} className="pointer-events-none absolute start-3 top-3.5 text-muted-foreground" /><Input id="auth-email" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} className="h-12 rounded-xl ps-10" placeholder="you@example.com" /></div>
                 </div>
+                {isVerify && (
+                  <div className="space-y-2">
+                    <label htmlFor="auth-verification-code" className="block text-sm font-medium">{c.verificationCode}</label>
+                    <Input
+                      id="auth-verification-code"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      autoComplete="one-time-code"
+                      maxLength={10}
+                      required
+                      value={verificationCode}
+                      onChange={event => setVerificationCode(event.target.value)}
+                      className="h-12 rounded-xl"
+                    />
+                  </div>
+                )}
                 {(isSignIn || isRegistration || isReset) && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-3">
@@ -365,9 +451,21 @@ export default function AuthPage() {
                 {error && <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">{error}</p>}
                 {message && <p role="status" className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-sm text-foreground">{message}</p>}
                 <Button type="submit" className="h-12 w-full rounded-xl bg-[var(--color-teal-dark)] font-semibold text-white hover:opacity-90 dark:bg-[var(--color-teal)] dark:text-slate-950" disabled={busy || !neon}>
-                  {busy ? c.loading : isRegistration ? c.signup : isForgot ? c.sendLink : isReset ? c.resetButton : isVerify ? c.resend : c.login} <ArrowRight size={17} />
+                  {busy ? c.loading : isRegistration ? c.signup : isForgot ? c.sendLink : isReset ? c.resetButton : isVerify ? c.verifyCode : c.login} <ArrowRight size={17} />
                 </Button>
               </form>
+
+              {isVerify && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="mt-4 w-full text-sm"
+                  disabled={busy || !neon}
+                  onClick={() => void resendVerificationCode()}
+                >
+                  {c.resend}
+                </Button>
+              )}
 
               {(isSignIn || isRegistration) ? (
                 <p className="mt-6 text-center text-sm text-muted-foreground">
