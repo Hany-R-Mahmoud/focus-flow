@@ -412,12 +412,7 @@ export default function GroupSessions() {
                   : "This name is stored locally in this browser."}
               </p>
             </div>
-            {isSupabaseConfigured && (
-              <TurnstileChallenge
-                action="join_group_session"
-                onTokenChange={setCaptchaToken}
-              />
-            )}
+
             <Button onClick={confirmJoinSession} className="w-full">
               Join Session
             </Button>
