@@ -291,9 +291,9 @@ export async function subscribeToCloudGroupPresence(
       }));
       if (!disposed) {
         const next = new Map(participants.map(p => [p.id, p.name]));
-        for (const [id, name] of known) {
+        known.forEach((name, id) => {
           if (!next.has(id)) onLeave?.(name);
-        }
+        });
         known = next;
         onChange(participants);
       }
