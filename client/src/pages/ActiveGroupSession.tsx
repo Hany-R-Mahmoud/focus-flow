@@ -249,7 +249,7 @@ export default function ActiveGroupSession() {
       setCloudPresenceActive(false);
       cleanup?.();
     };
-  }, [session]);
+  }, [session, isSupabaseConfigured]);
 
   useEffect(() => {
     if (!session) return;
