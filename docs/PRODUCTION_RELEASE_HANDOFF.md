@@ -21,8 +21,8 @@ Updated: **2026-10-16**. **No merge or Production cutover performed.** PR: https
   - `pnpm check`: passed TypeScript
   - `pnpm test`: **46/46 passed across 12 test files**
   - `pnpm build`: passed
-- Previous Vercel Preview for commit `6d81d5a2` was `READY` with frozen installation, but newer code fixes are not yet deployed on a fresh Preview URL.
-- Attempting to deploy the newest code through Vercel returned **HTTP 402 `api-deployments-free-per-day`**, more than **100 API deployments/day**. No paid upgrade was attempted. Its quota must reset before a fresh Preview can be verified.
+- **Current app-code Preview at commit `fe964932` is `READY`**, at Vercel deployment `dpl_CAepvTrVsFZJocef2ztSWHV5wfQQ`. Its logs confirm **frozen install, 4/4 environment checks, 46/46 Vitest, TypeScript and build**. Its code includes all fixes through commit `9643e064`.
+- One manual deployment request returned **HTTP 402 `api-deployments-free-per-day`** after the 100/day limit was reached; **Git-integrated Preview nevertheless built successfully**. No paid plan change was used.
 - Neon SQL privilege audit confirms the **anonymous** role cannot EXECUTE exposed Group Session RPCs, the **authenticated** role can EXECUTE intended RPCs, and the internal rate-limit RPC is not callable directly.
 - **Do not infer from passing unit checks that two-browser group permissions, SMTP delivery, or public Google OAuth are fully verified.**
 
@@ -32,7 +32,7 @@ Updated: **2026-10-16**. **No merge or Production cutover performed.** PR: https
 2. **Custom SMTP + email verification policy** — Neon Production Auth still reports **shared** email provider; signup/sign-in does not require verification. Obtain verified sender and valid SMTP credentials, configure them securely in Neon, test email **OTP code** verification/resend and password-reset link, then require verification. The implemented UI matches OTP verification, not verification-by-link.
 3. **Auth trusted domain hardening** — Production Neon Auth currently allows localhost; remove localhost from Production Auth while retaining it for Preview/local developer use as in the official checklist.
 4. **Real two-account Preview E2E** — test signed-in Group Sessions create, join, live roster, disconnect/reconnect, leave, owner delete and non-owner denial. Test Guest Mode and unchanged IndexedDB data after sign-in/sign-out. Neither a DB grants query nor 46 unit tests replaces this.
-5. **Fresh Vercel Preview** — when daily quota resets, build the then-current branch head with Preview env and validate its `READY` state and logs. The source is verified locally only since the last patches.
+5. **Browser E2E on the verified Preview** — current app code now has a `READY` Vercel Preview; exercise Auth and two-account Group Sessions on that Preview. Doc-only commits may advance the Git head without changing the tested app code.
 6. **Final owner approval** — user explicitly requested to be the one approving and merging after readiness is confirmed.
 
 Handover for browser-based external steps: [CODEX_FINAL_RELEASE_HANDOVER.md](./CODEX_FINAL_RELEASE_HANDOVER.md).
