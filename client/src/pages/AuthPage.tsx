@@ -241,7 +241,7 @@ export default function AuthPage() {
         setTimeout(() => setLocation("/auth/login"), 1100);
       } else if (isVerify) {
         const code = verificationCode.trim();
-        if (!/^\\d{4,10}$/.test(code)) throw new Error(c.invalidCode);
+        if (!/^\d{4,10}$/.test(code)) throw new Error(c.invalidCode);
         const result = await neon.auth.emailOtp.verifyEmail({ email, otp: code });
         if (result.error) throw new Error(result.error.message);
         setVerificationCode("");
@@ -263,7 +263,7 @@ export default function AuthPage() {
       setError(c.unconfigured);
       return;
     }
-    if (!/^\\S+@\\S+\\.\\S+$/.test(email)) {
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
       setError(c.invalid);
       return;
     }
