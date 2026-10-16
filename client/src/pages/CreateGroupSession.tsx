@@ -10,7 +10,8 @@ import { toast } from "sonner";
 import { createGroupSession } from "@/lib/db";
 import { saveDisplayName } from "@/lib/neon";
 import { syncGroupSessionToCloud } from "@/lib/cloudGroupSessions";
-import { isSupabaseConfigured, isTurnstileConfigured } from "@/lib/neon";
+import { isNeonConfigured, isTurnstileConfigured } from "@/lib/neon";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   generateSessionId,
   generateGroupSessionLink,
@@ -20,6 +21,8 @@ import {
 import { AlertCircle, Check, Copy, Eye, Share2 } from "lucide-react";
 
 export default function CreateGroupSession() {
+  const { user } = useAuth();
+  const isSupabaseConfigured = isNeonConfigured && Boolean(user);
   const [, setLocation] = useLocation();
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
