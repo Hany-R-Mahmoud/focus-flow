@@ -3,7 +3,6 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { TurnstileChallenge } from "@/components/TurnstileChallenge";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Dialog,
@@ -30,7 +29,6 @@ import { getSessionParticipants, addParticipant } from "@/lib/participants";
 import {
   getGroupJoinErrorMessage,
   isNeonConfigured,
-  isTurnstileConfigured,
   normalizeDisplayName,
   saveDisplayName,
 } from "@/lib/neon";
@@ -61,7 +59,6 @@ export default function GroupSessions() {
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [now, setNow] = useState(() => Date.now());
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -164,7 +161,7 @@ export default function GroupSessions() {
         await joinCloudGroupSession(
           joinSession.payloadSessionId,
           name,
-          captchaToken ?? undefined
+          undefined
         );
       } else {
         await saveDisplayName(name);
@@ -173,7 +170,6 @@ export default function GroupSessions() {
       toast.success("You've joined the session!");
       setShowJoinDialog(false);
       setJoinSession(null);
-      setCaptchaToken(null);
       setLocation(`/active-group/${joinSession.id}`);
     } catch (error) {
       releaseActiveGroupSession(activeSessionKey);
