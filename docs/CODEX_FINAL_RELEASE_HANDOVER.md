@@ -10,7 +10,7 @@ Updated: 2026-10-16. **Review and configure only. Do not merge PR #2, deploy Pro
 - Google custom OAuth credentials are already configured in Neon Auth for both environments (secret values remain redacted). The approved Google test user successfully signed into Preview and reached the dashboard.
 - The source now supports Neon email verification **numeric OTP codes**, including code entry and resending. Password reset still uses an emailed reset link.
 - Current production Neon Auth configuration was read on 2026-10-16: sender type **shared**; email/password enabled; email verification **not required**; localhost allowed. Google consent's last browser-verified state was **Testing**, not published.
-- The latest migration source passed an isolated frozen-lockfile build, TypeScript check, 46 Vitest tests and four environment-guard tests. **Vercel's 100 API deployments/day limit prevented deploying that newest commit**.
+- The current app-code Preview deployment is now **READY** on Vercel (commit `fe964932`) with frozen lockfile, TypeScript, 46 Vitest tests and four environment guard tests. A separate manual Vercel API deployment attempt hit the 100/day quota, but Git integration succeeded.
 
 ## Task A — Google OAuth public availability
 
@@ -29,9 +29,9 @@ Updated: 2026-10-16. **Review and configure only. Do not merge PR #2, deploy Pro
 5. Per Neon's production checklist, **disable localhost access on the Production Neon Auth project**, including stale explicit localhost trusted domains. Keep Preview/local development on the separate Preview Neon project.
 6. Check the final production and preview trusted origins, app names, and Google callback URLs before concluding this step.
 
-## Task C — Multi-user Preview verification (when Vercel limit resets)
+## Task C — Multi-user Preview verification (latest READY Git Preview)
 
-1. Once Vercel allows deployments again, verify that PR #2's **current head commit** (not an older successful commit) has a fresh `READY` Preview deployment using the Preview Neon endpoint.
+1. Open the current **READY** Git-integrated Preview for app-code commit `fe964932` and confirm its verified Preview Neon endpoint. If a later code commit lands, verify that newer code has a fresh `READY` Preview too.
 2. With **two distinct owned test accounts**, test a connected group room: owner creates, second account opens invite and joins, both see live roster, one leaves/rejoins, owner cancels, non-owner cannot cancel. Check browser refresh and logout/login.
 3. Guest: no account should be required for personal focus features; private local IndexedDB data survives guest → account → sign out transitions. Guest/local invites do not promise a cross-device roster.
 4. Check email sign-in and Google login separately. Ensure returning Google OAuth users reach `/dashboard`. Record any runtime errors with private data redacted.
