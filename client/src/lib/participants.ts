@@ -5,7 +5,7 @@ import {
   DisplayNameTakenError,
   getDisplayNameKey,
   normalizeDisplayName,
-} from "./supabase";
+} from "./neon";
 
 export interface Participant {
   id: string;
