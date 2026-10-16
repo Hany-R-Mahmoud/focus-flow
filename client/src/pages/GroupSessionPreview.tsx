@@ -45,7 +45,7 @@ import { formatTime } from "@/lib/time";
 import { AlertCircle, Users, Link as LinkIcon } from "lucide-react";
 
 export default function GroupSessionPreview() {
-  const { user } = useAuth();
+  const { user, ready } = useAuth();
   const isSupabaseConfigured = isNeonConfigured && Boolean(user);
   const [, setLocation] = useLocation();
   const [session, setSession] = useState<GroupSession | null>(null);
@@ -60,12 +60,14 @@ export default function GroupSessionPreview() {
   const [cloudRoomFound, setCloudRoomFound] = useState(false);
 
   useEffect(() => {
+    if (!ready) return;
     let cancelled = false;
 
     const loadSession = async () => {
       setLoading(true);
       setError(null);
       setSession(null);
+      setCloudRoomFound(false);
 
       try {
         await initDB();
@@ -171,7 +173,7 @@ export default function GroupSessionPreview() {
       cancelled = true;
       window.removeEventListener("hashchange", loadSession);
     };
-  }, []);
+  }, [ready, isSupabaseConfigured]);
 
   useEffect(() => {
     if (!session) return;
@@ -402,14 +404,22 @@ export default function GroupSessionPreview() {
           </div>
         )}
 
-        {/* Privacy Notice */}
-        <div className="bg-gray-50 p-4 rounded text-sm text-muted-foreground">
+        {/* Account rooms get a synchronized participant roster; guest rooms stay local. */}
+        <div className="bg-muted/50 p-4 rounded text-sm text-muted-foreground">
           <p className="font-medium mb-2">How it works:</p>
           <ul className="space-y-1 text-xs">
-            <li>• You join this session independently on your device</li>
-            <li>• Your personal session data stays private</li>
-            <li>• Your name is stored locally in this browser</li>
-            <li>• Live cross-device participant presence is not enabled</li>
+            <li>• Your personal focus session data stays private on this device</li>
+            {isSupabaseConfigured && cloudRoomFound ? (
+              <>
+                <li>• Your display name is visible to members of this connected room</li>
+                <li>• Participants in this room share a live roster through Neon</li>
+              </>
+            ) : (
+              <>
+                <li>• This invitation works locally without creating an account</li>
+                <li>• Live cross-device participant presence is not enabled in guest mode</li>
+              </>
+            )}
           </ul>
         </div>
 
@@ -460,9 +470,9 @@ export default function GroupSessionPreview() {
                 maxLength={50}
               />
               <p className="text-xs text-muted-foreground mt-1">
-                {isSupabaseConfigured
-                  ? "This display name is shared with people in this session."
-                  : "This name is stored locally in this browser."}
+                {isSupabaseConfigured && cloudRoomFound
+                  ? "Your name appears in this connected room's live roster."
+                  : "Your name stays in this browser for this local session."}
               </p>
             </div>
 
