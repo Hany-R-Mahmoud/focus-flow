@@ -160,16 +160,6 @@ export default function GroupSessions() {
 
     try {
       const name = normalizeDisplayName(participantName);
-      if (isSupabaseConfigured && !isTurnstileConfigured) {
-        toast.error("Configure Turnstile before joining");
-        releaseActiveGroupSession(activeSessionKey);
-        return;
-      }
-      if (isSupabaseConfigured && !captchaToken) {
-        toast.error("Complete the CAPTCHA before joining");
-        releaseActiveGroupSession(activeSessionKey);
-        return;
-      }
       if (isSupabaseConfigured && joinSession.payloadSessionId) {
         await joinCloudGroupSession(
           joinSession.payloadSessionId,
