@@ -16,9 +16,9 @@ Updated **2026-10-16**. Current status: **code implementation completed and inde
 ## Current evidence
 
 - Latest source code **`9643e064`**: isolated VM `pnpm install --frozen-lockfile`, `pnpm check`, **46/46 Vitest**, **4/4 environment guard tests**, and `pnpm build` all passed. The VM was shut down.
-- Older frozen-lockfile Preview commit `6d81d5a2` reached Vercel **READY**.
-- The owner previously confirmed a successful Preview Google OAuth sign-in and dashboard redirect. The most recent code modifications still require a new end-to-end browser trial.
-- **Vercel API daily Preview limit**: newest Preview deployment request was rejected with HTTP 402 (100 deployments/day); do not assume new code is deployed.
+- **Git-integrated Preview of app-code commit `fe964932` reached `READY`**, with frozen install, 4/4 environment guard checks, TypeScript, 46/46 Vitest and build in its logs. All application-code changes through `9643e064` are included.
+- The owner previously confirmed successful Preview Google OAuth sign-in and dashboard redirect. The new auth and group fixes still require a real browser E2E recheck.
+- A *manual* Vercel API deploy was refused (100 API deployments/day), but Git integration created the above successful Preview; no paid plan upgrade was attempted.
 - Latest actual Production deployment remains the previous `main` commit. No merge or cutover performed.
 
 ## Items before Production launch
@@ -27,7 +27,7 @@ Updated **2026-10-16**. Current status: **code implementation completed and inde
 - Google consent last seen in Testing mode; publish for non-test users through Google Cloud Console.
 - Disable localhost in Production Neon Auth after validating production trusted domains.
 - Two-account Preview E2E for connected Group Sessions and guest-account data continuity.
-- Retry newest Vercel Preview after quota reset, then obtain owner's final PR approval/merge.
+- Re-test Google/Email Auth and connected Group Sessions on the latest READY Preview, then obtain owner's final PR approval/merge.
 
 ## Links
 
