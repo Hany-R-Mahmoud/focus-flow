@@ -5,12 +5,11 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { TurnstileChallenge } from "@/components/TurnstileChallenge";
 import { toast } from "sonner";
 import { createGroupSession } from "@/lib/db";
 import { saveDisplayName } from "@/lib/neon";
 import { syncGroupSessionToCloud } from "@/lib/cloudGroupSessions";
-import { isNeonConfigured, isTurnstileConfigured } from "@/lib/neon";
+import { isNeonConfigured } from "@/lib/neon";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   generateSessionId,
@@ -29,7 +28,6 @@ export default function CreateGroupSession() {
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [payload, setPayload] = useState<GroupSessionPayload | null>(null);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -142,17 +140,17 @@ export default function CreateGroupSession() {
         if (newPayload.organizerName) {
           await saveDisplayName(
             newPayload.organizerName,
-            captchaToken ?? undefined
+            undefined
           );
         }
-        await syncGroupSessionToCloud(newPayload, captchaToken ?? undefined);
+        await syncGroupSessionToCloud(newPayload, undefined);
       } catch (cloudError) {
         const message =
           cloudError instanceof Error ? cloudError.message : "Unknown error";
         console.warn(`Cloud group-session sync unavailable. ${message}`);
         if (isSupabaseConfigured) {
           toast.error(
-            "Could not publish the session to Supabase. No invite link was created."
+            "Could not publish the session to Neon. No invite link was created."
           );
           return;
         }
