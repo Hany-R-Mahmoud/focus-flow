@@ -106,7 +106,7 @@ export default function Sidebar() {
           <Button asChild variant="outline" className="w-full justify-start gap-3">
             <a href="/auth/login">
               {user ? <UserRound size={18} /> : <LogIn size={18} />}
-              <span className="truncate">{user ? user.email : "Sign in / Create account"}</span>
+              <span className="truncate">{user ? user.email : "Sign in with Google"}</span>
             </a>
           </Button>
           <PwaInstallMenuAction className="w-full justify-start gap-3" />
