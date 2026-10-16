@@ -271,7 +271,7 @@ export default function Settings() {
             <LogOut size={17} /> {language === "ar" ? "تسجيل الخروج" : "Sign out"}
           </Button>
         ) : (
-          <Button asChild className="gap-2"><a href="/auth/login"><LogIn size={17} />{language === "ar" ? "تسجيل الدخول أو إنشاء حساب" : "Sign in or create account"}</a></Button>
+          <Button asChild className="gap-2"><a href="/auth/login"><LogIn size={17} />{language === "ar" ? "تسجيل الدخول بـ Google" : "Sign in with Google"}</a></Button>
         )}
       </Card>
 
