@@ -54,7 +54,7 @@ An offline-first focus session planner for students, freelancers, and knowledge 
 
 Focus Flow remains **offline-first**. Choose **Continue as guest** at `/auth/login` to work without signing in. Your personal focus sessions, templates, reviews, distractions and timer state stay in your browser's IndexedDB in both modes. Guest data is not silently uploaded when you sign in; use Settings → Export / Import for portability.
 
-Signing in with a **Neon Managed Better Auth** account enables connected group sessions and the shared participant roster. Email/password sign-up, sign-in, forgot password, email verification and a Google sign-in button are available on `/auth/login`, `/auth/signup`, `/auth/forgot`, `/auth/reset` and `/auth/verify`. Production Google OAuth requires your own Google Cloud credentials configured within Neon. On the branch, the collaboration backend uses Neon Data API with RLS, member-specific RPCs, database rate limits and bounded presence heartbeat polling. Guest group invitations continue to work in local-only mode with shareable payload links; the live multi-device roster is for signed-in cloud rooms.
+Google sign-in through **Neon Managed Better Auth** enables connected group sessions and the shared participant roster. Email/password sign-in, sign-up, verification and password-reset UI are intentionally disabled on both Neon environments. The main account route is `/auth/login` and provides exactly two choices: **Continue with Google** or **Continue as Guest**. Google publishing is still limited to approved test users while Google's external-app branding/domain verification is pending. The backend uses Neon Data API with RLS, member-scoped functions, rate limits and bounded presence polling. Guest group invitations continue to work in local-only mode with shareable payload links, without a live multi-device roster.
 
 To develop locally:
 
@@ -63,7 +63,7 @@ To develop locally:
 3. Add the local and deployed origins to Neon Auth **Trusted domains**. The production app origin is `https://focus-session-flow.vercel.app`.
 4. Install with pnpm and run `pnpm dev`. Neon Auth stores account sessions, not browser timer data. Account features require network access, guest features do not.
 
-**Do not put Google Client Secret, SMTP credentials, PostgreSQL role password or privileged database URL into Vite `VITE_*` settings.** For launch requirements and current blockers, see `docs/NEON_GO_LIVE_CHECKLIST.md` and the Codex-specific `docs/CODEX_GOOGLE_CLOUD_HANDOVER.md`.
+**Do not put Google Client Secret, PostgreSQL role passwords or privileged database URLs into Vite `VITE_*` settings.** Public legal notices are in `client/public/privacy.html` and `client/public/terms.html`. See `docs/NEON_GO_LIVE_CHECKLIST.md` and `docs/CODEX_FINAL_RELEASE_HANDOVER.md` for the limited-rollout and Google domain-verification requirements.
 
 ### Build for Production
 
@@ -89,7 +89,7 @@ offer a native install prompt; iOS uses browser instructions for Add to Home
 Screen. The app keeps a persistent install action after a dismissed promotion
 and provides copyable-link fallbacks in embedded browsers. The service worker
 caches only the application shell and versioned static assets; IndexedDB data,
-Supabase/auth traffic, and downloads remain network-only.
+Neon Auth traffic and downloads remain network-only.
 
 ## Usage
 
@@ -459,19 +459,6 @@ An offline-first focus session planner for students, freelancers, and knowledge 
 
 4. Open your browser to `http://localhost:3000`
 
-### Optional Supabase Collaboration
-
-The app remains local-only when these variables are unset. To enable anonymous cloud identity, authoritative group sessions, join history, and live participant presence:
-
-1. Create a Supabase project and enable Anonymous Sign-Ins.
-2. Configure Cloudflare Turnstile and enable CAPTCHA protection in Supabase Auth.
-3. Run all files in `supabase/migrations/` in filename order in the Supabase SQL Editor.
-4. Copy `.env.example` to `.env.local` and set the Supabase and Turnstile values.
-5. Restart the development server.
-
-Only the publishable key belongs in the browser. Do not expose a Supabase service-role key.
-The security setup guide is in `SUPABASE_SETUP.md`. The final migrations enable daily cleanup for unused anonymous accounts and database-side create/join rate limits.
-
 ### Build for Production
 
 ```bash
@@ -721,13 +708,13 @@ The app seeds templates, completed sessions, reviews, and example group sessions
 - **Single-device**: Data is stored locally; not synchronized across devices
 - **No cloud sync**: Manual export/import required for data portability
 - **Storage limits**: IndexedDB quota depends on browser (typically 50MB+)
-- **Group sessions**: Local mode is coordinated only; configured cloud mode adds anonymous membership and live presence while personal activity remains local
+- **Group sessions**: Guest rooms are coordinated locally; Google-authenticated rooms use Neon for membership and presence while personal activity remains local
 
 ## Privacy
 
-- **No tracking**: No analytics or advertising services; configured cloud mode uses Supabase for group collaboration
+- **Site metrics**: Vercel Analytics and a homepage visitor counter are active; see the published Privacy Policy for details
 - **Local storage only**: Personal IndexedDB and localStorage data stays on your device
-- **No account required**: Anonymous Supabase identity is used only when cloud collaboration is enabled
+- **No account required**: Guest usage is available without identity; Google/Neon Auth is only required for connected group membership
 - **Data ownership**: You control all exports and backups
 - **Group sessions**: Shared details (title, time, organizer name) are in the URL; personal intentions/outcomes stay private
 
