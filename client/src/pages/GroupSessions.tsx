@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { TurnstileChallenge } from "@/components/TurnstileChallenge";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Dialog,
   DialogContent,
@@ -28,11 +29,11 @@ import { formatTime } from "@/lib/time";
 import { getSessionParticipants, addParticipant } from "@/lib/participants";
 import {
   getGroupJoinErrorMessage,
-  isSupabaseConfigured,
+  isNeonConfigured,
   isTurnstileConfigured,
   normalizeDisplayName,
   saveDisplayName,
-} from "@/lib/supabase";
+} from "@/lib/neon";
 import {
   deleteCloudGroupSession,
   joinCloudGroupSession,
@@ -46,6 +47,8 @@ import ParticipantBadge from "@/components/ParticipantBadge";
 import { FileText, Play, Trash2, Save, Users, Plus } from "lucide-react";
 
 export default function GroupSessions() {
+  const { user } = useAuth();
+  const isSupabaseConfigured = isNeonConfigured && Boolean(user);
   const [, setLocation] = useLocation();
   const [sessions, setSessions] = useState<GroupSession[]>([]);
   const [loading, setLoading] = useState(true);
