@@ -1,39 +1,24 @@
-# Focus Flow → Neon migration status
+# Focus Flow — Neon migration status
 
-Updated **2026-10-16**. Current status: **code implementation completed and independently built; production release pending external readiness and owner approval**.
+Updated: 2026-10-16
 
-## Changes implemented
+## Status: implementation prepared, final owner merge pending
 
-- Migrated active frontend Supabase SDK integrations to Neon Managed Better Auth + Data API.
-- Full English/Arabic account entry with Email/Password, Google Sign-In, numeric verification-code entry and resend, password reset, and Continue as Guest.
-- Guest timers, local history and private focus reviews remain in IndexedDB; account authentication does not silently sync private data or delete guest history.
-- Signed-in Group Sessions use Neon Postgres member/owner security, SQL rate limiting and heartbeat presence. Guest/local invitation sharing stays available without a network account.
-- Separate preview and production Neon projects; both enabled for Auth and Data API with group migration applied. Verified RLS and RPC grants.
-- Production `VITE_NEON_URL` preconfigured on Vercel. Existing production deployment and old URL untouched.
-- Fixed OAuth dashboard return, authenticated invite loading, presence reconnection and failed cloud create cleanup.
-- Updated lockfile and committed frozen pnpm install and Neon endpoint build guard.
+The migration branch is `migration/neon-backend`. Pull request: https://github.com/Hany-R-Mahmoud/focus-flow/pull/2 (Draft, not merged). Existing Vercel Production URL and older deployment remain unchanged.
 
-## Current evidence
+- **Account:** Neon Managed Better Auth with Google social sign-in. Neon Email/Password is disabled on Preview and Production. The new UI offers Google or Guest only; switching to Guest signs out first, preserving private local data.
+- **Private data:** Focus timers, templates, notes and reviews remain local in IndexedDB, with no automatic cross-device sync.
+- **Collaboration:** Signed-in Group Sessions use Neon Data API, RLS, membership authorization, SQL rate limiting and heartbeat presence. Guest invitations remain browser-local.
+- **Environment:** Separate Neon Preview and Production projects; scoped public Vercel database URLs validated by build guards. Lockfile is committed with frozen pnpm install.
+- **Legal:** Public static `/privacy.html` and `/terms.html` are committed and linked from homepage and login. They are not live on the Production URL until merge and deployment; existing `.vercel.app` shared hosting may not satisfy Google's owned-domain check.
+- **Test results:** Latest Google-only app code passed an isolated Linux frozen install, TypeScript, 46 Vitest tests and Vite build. Both legal HTML pages were present in the output. Previous Google Sign-In succeeded on an older Preview as reported by the owner. The latest code has not yet been verified through a new Vercel browser session.
 
-- Latest source code **`9643e064`**: isolated VM `pnpm install --frozen-lockfile`, `pnpm check`, **46/46 Vitest**, **4/4 environment guard tests**, and `pnpm build` all passed. The VM was shut down.
-- **Git-integrated Preview of app-code commit `fe964932` reached `READY`**, with frozen install, 4/4 environment guard checks, TypeScript, 46/46 Vitest and build in its logs. All application-code changes through `9643e064` are included.
-- The owner previously confirmed successful Preview Google OAuth sign-in and dashboard redirect. The new auth and group fixes still require a real browser E2E recheck.
-- A *manual* Vercel API deploy was refused (100 API deployments/day), but Git integration created the above successful Preview; no paid plan upgrade was attempted.
-- Latest actual Production deployment remains the previous `main` commit. No merge or cutover performed.
+## Remaining before public Google login
+1. Google Auth Platform still last known in **Testing**. Once legal pages are live, submit exact policy links and attempt Google domain verification/publishing. Free shared Vercel hosting may be rejected; do not claim public Google access without confirmation.
+2. Until then, only whitelisted Google test users can sign in. Everyone can use Guest Mode.
+3. Connected Group Sessions multi-account E2E remains unverified. Production pilot should be treated as limited and reversible.
+4. Owner explicitly approves and merges PR #2; Vercel then builds new Production artifacts using the Production Neon URL, not Preview.
 
-## Items before Production launch
+**SMTP and email password reset are not release requirements** because the entire email/password feature is disabled.
 
-- Configure custom SMTP in Production Neon Auth, test code email verification and password reset, and enable required email verification; shared SMTP remains configured now.
-- Google consent last seen in Testing mode; publish for non-test users through Google Cloud Console.
-- Disable localhost in Production Neon Auth after validating production trusted domains.
-- Two-account Preview E2E for connected Group Sessions and guest-account data continuity.
-- Re-test Google/Email Auth and connected Group Sessions on the latest READY Preview, then obtain owner's final PR approval/merge.
-
-## Links
-
-- [PR #2](https://github.com/Hany-R-Mahmoud/focus-flow/pull/2)
-- [Production readiness checklist](./NEON_GO_LIVE_CHECKLIST.md)
-- [Detailed production release handoff](./PRODUCTION_RELEASE_HANDOFF.md)
-- [Codex final external setup handoff](./CODEX_FINAL_RELEASE_HANDOVER.md)
-
-The canonical production URL is **https://focus-session-flow.vercel.app**. It will remain the same after a verified Production cutover using the existing Vercel project. Historical Supabase data is intentionally not migrated.
+For steps and rollback see [NEON_GO_LIVE_CHECKLIST.md](./NEON_GO_LIVE_CHECKLIST.md) and [PRODUCTION_RELEASE_HANDOFF.md](./PRODUCTION_RELEASE_HANDOFF.md).
