@@ -4,6 +4,7 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LocaleProvider, useLocale } from "./contexts/LocaleContext";
+import { AuthProvider } from "./contexts/AuthContext";
 import Sidebar from "./components/Sidebar";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useLocation } from "wouter";
@@ -14,6 +15,7 @@ import PwaInstallHelpDialog from "./components/PwaInstallHelpDialog";
 import PwaStatusBar from "./components/PwaStatusBar";
 
 const Home = lazy(() => import("./pages/Home"));
+const AuthPage = lazy(() => import("./pages/AuthPage"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const SessionTemplates = lazy(() => import("./pages/SessionTemplates"));
 const ActiveSession = lazy(() => import("./pages/ActiveSession"));
@@ -44,6 +46,8 @@ function Router() {
     >
       <Switch>
         <Route path={"/"} component={Home} />
+        <Route path={"/auth"} component={AuthPage} />
+        <Route path={"/auth/:mode"} component={AuthPage} />
         <Route path={"/dashboard"} component={Dashboard} />
         <Route path={"/templates"} component={SessionTemplates} />
         <Route path={"/session/:id"} component={ActiveSession} />
@@ -67,7 +71,7 @@ function AppContent() {
   // Initialize reminders
   useSessionReminders();
   const [location] = useLocation();
-  const isLandingPage = location === "/";
+  const isLandingPage = location === "/" || location.startsWith("/auth");
 
   return (
     <div className={isLandingPage ? "min-h-screen" : "flex h-[100dvh] min-h-0"}>
@@ -109,6 +113,7 @@ function App() {
   return (
     <ThemeProvider defaultTheme="light" switchable>
       <LocaleProvider>
+        <AuthProvider>
         <SeoMetadata />
         <PwaStatusBar />
         <ErrorBoundary>
@@ -128,6 +133,7 @@ function App() {
             </TooltipProvider>
           )}
         </ErrorBoundary>
+        </AuthProvider>
       </LocaleProvider>
     </ThemeProvider>
   );
