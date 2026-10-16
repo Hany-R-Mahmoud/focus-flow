@@ -10,6 +10,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { neon, neonAuthBaseUrl } from "@/lib/neon";
+import { clearGoogleOAuthStarted, markGoogleOAuthStarted } from "@/lib/googleOAuthReturn";
 
 type Mode = "login" | "signup" | "forgot" | "reset" | "verify";
 type CopyKey = "login" | "signup" | "forgot" | "reset" | "verify";
@@ -225,11 +226,15 @@ export default function AuthPage() {
     }
     setBusy(true);
     try {
+      // A tab-scoped marker lets the app recover if Neon returns to "/" despite
+      // the requested dashboard URL. It is not used as proof of authentication.
+      try { markGoogleOAuthStarted(window.sessionStorage); } catch { /* storage unavailable */ }
       const result = await neon.auth.signIn.social({
         provider: "google", callbackURL: window.location.origin + "/dashboard",
       });
       if (result.error) throw new Error(result.error.message);
     } catch (cause) {
+      try { clearGoogleOAuthStarted(window.sessionStorage); } catch { /* storage unavailable */ }
       setError(cause instanceof Error ? cause.message : "Google authentication failed");
       setBusy(false);
     }
@@ -376,7 +381,7 @@ export default function AuthPage() {
           )}
 
           <div className="my-8 h-px bg-border" />
-          <a href="/dashboard" onClick={() => localStorage.setItem("focusflow_guest_chosen", "true")} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-xl border border-border bg-muted/40 px-5 py-3 text-sm font-semibold transition-colors hover:bg-muted">
+          <a href="/dashboard" onClick={() => { try { clearGoogleOAuthStarted(window.sessionStorage); } catch { /* storage unavailable */ } localStorage.setItem("focusflow_guest_chosen", "true"); }} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-xl border border-border bg-muted/40 px-5 py-3 text-sm font-semibold transition-colors hover:bg-muted">
             <UserRound size={18} /> {c.guest} <ArrowRight size={17} />
           </a>
           <p className="mt-3 text-center text-xs leading-5 text-muted-foreground">{c.guestNote}</p>
