@@ -71,10 +71,27 @@ export function getGroupJoinErrorMessage(error: unknown): string {
   return "Failed to join session";
 }
 
-export async function saveDisplayName(name: string): Promise<string> {
+export async function saveDisplayName(name: string, _captchaToken?: string): Promise<string> {
   const normalized = normalizeDisplayName(name);
   if (!normalized) throw new DisplayNameRequiredError("Display name is required");
   if (normalized.length > 50) throw new CloudIntegrationError("Display name must be at most 50 characters");
   if (typeof localStorage !== "undefined") localStorage.setItem(DISPLAY_NAME_KEY, normalized);
   return normalized;
+}
+
+/** The app keeps a local guest mode. Cloud RPCs require a signed-in user. */
+let activeCloudSession = false;
+export function setActiveCloudSession(active: boolean): void { activeCloudSession = active; }
+export function isCloudSessionActive(): boolean { return activeCloudSession; }
+
+// Transitional names retained while the group-session boundary moves away from Supabase.
+export const supabase = neon;
+export const isSupabaseConfigured = isNeonConfigured;
+export const isTurnstileConfigured = false;
+export { CloudIntegrationError as SupabaseIntegrationError };
+export async function ensureAnonymousUser(_displayName?: string, _captchaToken?: string) {
+  if (!neon) return null;
+  const result = await neon.auth.getSession();
+  if (result.error) throw new CloudIntegrationError("Cannot load account session", { cause: result.error });
+  return result.data?.user ?? null;
 }
