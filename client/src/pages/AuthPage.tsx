@@ -36,6 +36,7 @@ const translations = {
     legalAnd: "and",
     cannotSignOut: "Couldn't switch to guest mode. Please try signing out again.",
     cannotGoogle: "Google sign-in failed. Please try again.",
+    testAccess: "During Google’s approval process, sign-in may work only for invited test accounts. Guest mode remains open to everyone.",
   },
   ar: {
     eyebrow: "مساحتك للتركيز بعمق",
@@ -61,6 +62,7 @@ const translations = {
     legalAnd: "و",
     cannotSignOut: "مقدرناش نحول لوضع الضيف. حاول تسجل خروج مرة تانية.",
     cannotGoogle: "حصلت مشكلة في تسجيل الدخول بـ Google. حاول مرة تانية.",
+    testAccess: "لحين انتهاء موافقة Google، تسجيل الدخول ممكن يشتغل بس للحسابات المدعوة للاختبار. وضع الضيف متاح للكل.",
   },
 };
 
@@ -213,6 +215,7 @@ export default function AuthPage() {
             </Button>
           )}
 
+          {!user && <p className="mt-3 text-center text-xs leading-6 text-muted-foreground">{c.testAccess}</p>}
           <div className="my-7 h-px bg-border" />
           <Button
             type="button"
