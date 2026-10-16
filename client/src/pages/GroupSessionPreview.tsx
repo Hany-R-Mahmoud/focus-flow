@@ -59,6 +59,7 @@ export default function GroupSessionPreview() {
   const [pendingPayload, setPendingPayload] =
     useState<GroupSessionPayload | null>(null);
   const [joining, setJoining] = useState(false);
+  const [cloudRoomFound, setCloudRoomFound] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   useEffect(() => {
@@ -92,6 +93,7 @@ export default function GroupSessionPreview() {
             const cloudSession = await getCloudGroupSessionByPayloadId(
               extracted.sessionId
             );
+            if (!cancelled) setCloudRoomFound(Boolean(cloudSession));
             loadedSession = cloudSession
               ? cloudGroupSessionToLocal(
                   cloudSession,
@@ -104,7 +106,7 @@ export default function GroupSessionPreview() {
               extracted.sessionId
             );
           }
-          if (!loadedSession && !isSupabaseConfigured) {
+          if (!loadedSession) {
             const allSessions = await getGroupSessions();
             loadedSession =
               allSessions.find(
@@ -117,7 +119,7 @@ export default function GroupSessionPreview() {
               ) || null;
           }
 
-          if (!loadedSession && !isSupabaseConfigured) {
+          if (!loadedSession) {
             const now = new Date().toISOString();
             loadedSession = {
               id: extracted.sessionId,
@@ -225,7 +227,7 @@ export default function GroupSessionPreview() {
       let joinedSession = session;
       if (pendingPayload) {
         await initDB();
-        const cloudJoined = isSupabaseConfigured
+        const cloudJoined = isSupabaseConfigured && cloudRoomFound
           ? await joinCloudGroupSession(
               pendingPayload.sessionId,
               name,
@@ -269,7 +271,7 @@ export default function GroupSessionPreview() {
         if (!isSupabaseConfigured) await saveDisplayName(name);
       }
 
-      if (!isSupabaseConfigured || !pendingPayload) {
+      if (!isSupabaseConfigured || !pendingPayload || !cloudRoomFound) {
         addParticipant(joinedSession.id, name);
       }
       setShowJoinDialog(false);
