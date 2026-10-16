@@ -242,7 +242,7 @@ export default function AuthPage() {
     let cancelled = false;
     void neon.auth.verifyEmail({ query: { token } }).then(result => {
       if (cancelled) return;
-      if (result.error) setError(result.error.message);
+      if (result.error) setError(result.error.message ?? "Verification failed");
       else {
         setMessage(c.verified);
         void refresh();
