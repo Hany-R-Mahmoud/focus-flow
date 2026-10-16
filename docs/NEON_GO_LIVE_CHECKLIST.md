@@ -14,17 +14,17 @@ Updated **2026-10-16**. **Not merged, not released to Production**. See [detaile
 - [x] Added numeric email verification code and resend support matching the configured Neon Auth verification method.
 - [x] Rebuilt and committed `pnpm-lock.yaml` using pnpm 10.4.1; Vercel install restored to **`pnpm install --frozen-lockfile`**.
 - [x] Latest source code at commit `9643e064` passed sandbox `pnpm install --frozen-lockfile --ignore-scripts`, TypeScript, 46/46 Vitest tests, 4/4 Neon environment tests and a complete production-style build. Build sandbox was stopped afterward.
-- [x] Vercel Preview for older commit `6d81d5a2` is READY, including frozen-lockfile install and Neon endpoint guard.
+- [x] **Git-integrated Vercel Preview** at commit `fe964932` is `READY` after all app-code fixes. Logs confirm frozen pnpm install, 4/4 guard tests, 46/46 Vitest tests, TypeScript check and build. The remaining newer commits only update release documents.
 
 ## Not verified / blockers before public launch or approval to merge
 
-- [ ] **Newest Preview**: Vercel returned HTTP 402 due to its **100 API deployments/day limit** on 2026-10-16. No deployment for the latest code has been verified. Retry only when the limit resets, without changing billing/plan.
+- [x] **Newest app-code Preview** verified at Vercel deployment `dpl_CAepvTrVsFZJocef2ztSWHV5wfQQ` (commit `fe964932`, READY). A manual API deployment request separately hit the free-tier 100/day limit, but the Git-integrated Preview succeeded. No plan upgrade was used.
 - [ ] **Production SMTP**: production Neon Auth still uses shared email delivery, which is for development. Configure a verified custom SMTP provider. Test email verification (OTP), sign-up, reset-password delivery and sign-in.
 - [ ] **Email verification requirement**: Neon production configuration currently allows sign-in without email verification. After SMTP is configured and verified, require verification and use **numeric OTP** (current UI), not verification links.
 - [ ] **Google public access**: custom credentials are configured, but Google Consent's last verified state is **Testing**; confirm it has been published to Production for non-test users.
 - [ ] **Neon Auth localhost**: production project currently allows localhost; disable localhost on Production Auth before public release, preserving separate Preview/local development.
 - [ ] **Authenticated Group Sessions E2E**: two independent Preview accounts must prove create/join/live roster/leave/reconnect/owner cancellation/non-owner denial.
-- [ ] **Live post-deployment smoke**: after owner's final approval and merge, check Guest Mode, Google login, email login, group rooms, browser-local IndexedDB data continuity and production logs.
+- [ ] **Production post-deployment smoke**: after owner's final approval and merge, check Guest Mode, Google login, email login, group rooms, browser-local IndexedDB data continuity and production logs.
 
 ## Final approval/release sequence
 
