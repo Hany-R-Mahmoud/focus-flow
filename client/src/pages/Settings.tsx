@@ -16,6 +16,8 @@ import { Download, Upload, Trash2 } from "lucide-react";
 import { requestNotificationPermission } from "@/lib/notifications";
 import { useLocale } from "@/contexts/LocaleContext";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useAuth } from "@/contexts/AuthContext";
+import { UserRound, LogIn, LogOut } from "lucide-react";
 import {
   loadUserPreferences,
   updateUserPreferences,
@@ -175,6 +177,7 @@ function isImportData(value: unknown): value is ImportData {
 
 export default function Settings() {
   const { language, setLanguage, t } = useLocale();
+  const { user, ready, signOut } = useAuth();
   const [preferences, setPreferences] =
     useState<UserPreferences>(loadUserPreferences);
   const wakeLockSupported =
@@ -251,6 +254,26 @@ export default function Settings() {
       <h1 className="text-3xl font-bold text-foreground mb-8">
         {t("settings.title")}
       </h1>
+
+      <Card className="p-6 mb-6">
+        <div className="mb-3 flex items-center gap-3">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--surface-accent)] text-[var(--color-teal-foreground)]"><UserRound size={20} /></span>
+          <div>
+            <h2 className="text-lg font-bold">{language === "ar" ? "الحساب" : "Your account"}</h2>
+            <p className="text-sm text-muted-foreground">{!ready ? "Loading..." : user ? user.email : language === "ar" ? "تستخدم التطبيق كضيف" : "Using Focus Flow as a guest"}</p>
+          </div>
+        </div>
+        <p className="mb-4 text-sm leading-6 text-muted-foreground">
+          {language === "ar" ? "بيانات التركيز الشخصية محفوظة في المتصفح. تسجيل الدخول لا يمسح بيانات الضيف ولا ينقلها للسحابة تلقائيًا." : "Your personal focus data is kept on this browser. Signing in never deletes or automatically uploads guest data."}
+        </p>
+        {user ? (
+          <Button variant="outline" className="gap-2" onClick={() => { void signOut().catch(() => toast.error("Could not sign out")); }}>
+            <LogOut size={17} /> {language === "ar" ? "تسجيل الخروج" : "Sign out"}
+          </Button>
+        ) : (
+          <Button asChild className="gap-2"><a href="/auth/login"><LogIn size={17} />{language === "ar" ? "تسجيل الدخول بـ Google" : "Sign in with Google"}</a></Button>
+        )}
+      </Card>
 
       <Card className="p-6 mb-6">
         <h2 className="text-xl font-bold text-foreground mb-4">

@@ -8,10 +8,13 @@ import {
   Settings,
   Play,
   Users,
+  LogIn,
+  UserRound,
 } from "lucide-react";
 import PwaInstallMenuAction from "./PwaInstallMenuAction";
 import MobileBottomNav from "./MobileBottomNav";
 import { useLocale } from "@/contexts/LocaleContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface NavItem {
   label: string;
@@ -22,6 +25,7 @@ interface NavItem {
 export default function Sidebar() {
   const [location, setLocation] = useLocation();
   const { t } = useLocale();
+  const { user } = useAuth();
 
   const navItems: NavItem[] = [
     {
@@ -99,6 +103,12 @@ export default function Sidebar() {
         </nav>
 
         <div className="p-4 space-y-2 border-t border-border">
+          <Button asChild variant="outline" className="w-full justify-start gap-3">
+            <a href="/auth/login">
+              {user ? <UserRound size={18} /> : <LogIn size={18} />}
+              <span className="truncate">{user ? user.email : "Sign in with Google"}</span>
+            </a>
+          </Button>
           <PwaInstallMenuAction className="w-full justify-start gap-3" />
           <Button
             className="w-full gap-2 bg-blue-600 hover:bg-blue-700 text-white"

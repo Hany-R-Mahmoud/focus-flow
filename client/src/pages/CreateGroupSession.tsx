@@ -5,12 +5,12 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { TurnstileChallenge } from "@/components/TurnstileChallenge";
 import { toast } from "sonner";
-import { createGroupSession } from "@/lib/db";
-import { saveDisplayName } from "@/lib/supabase";
+import { createGroupSession, deleteGroupSession } from "@/lib/db";
+import { saveDisplayName } from "@/lib/neon";
 import { syncGroupSessionToCloud } from "@/lib/cloudGroupSessions";
-import { isSupabaseConfigured, isTurnstileConfigured } from "@/lib/supabase";
+import { isNeonConfigured } from "@/lib/neon";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   generateSessionId,
   generateGroupSessionLink,
@@ -20,13 +20,14 @@ import {
 import { AlertCircle, Check, Copy, Eye, Share2 } from "lucide-react";
 
 export default function CreateGroupSession() {
+  const { user } = useAuth();
+  const isSupabaseConfigured = isNeonConfigured && Boolean(user);
   const [, setLocation] = useLocation();
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [payload, setPayload] = useState<GroupSessionPayload | null>(null);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -121,14 +122,6 @@ export default function CreateGroupSession() {
       }
 
       const link = generateGroupSessionLink(newPayload);
-      if (isSupabaseConfigured && !isTurnstileConfigured) {
-        toast.error("Configure Turnstile before creating a cloud session");
-        return;
-      }
-      if (isSupabaseConfigured && !captchaToken) {
-        toast.error("Complete the CAPTCHA before creating a cloud session");
-        return;
-      }
       const savedSession = await createGroupSession({
         payloadVersion: newPayload.version,
         title: newPayload.title,
@@ -147,17 +140,27 @@ export default function CreateGroupSession() {
         if (newPayload.organizerName) {
           await saveDisplayName(
             newPayload.organizerName,
-            captchaToken ?? undefined
+            undefined
           );
         }
-        await syncGroupSessionToCloud(newPayload, captchaToken ?? undefined);
+        const cloudSession = await syncGroupSessionToCloud(newPayload, undefined);
+        if (isSupabaseConfigured && !cloudSession) {
+          throw new Error("The authenticated Neon session is unavailable");
+        }
       } catch (cloudError) {
         const message =
           cloudError instanceof Error ? cloudError.message : "Unknown error";
         console.warn(`Cloud group-session sync unavailable. ${message}`);
         if (isSupabaseConfigured) {
+          // Never leave a hidden local duplicate that can be shared as if it were
+          // a connected room. The visitor can fix the error and retry safely.
+          try {
+            await deleteGroupSession(savedSession.id);
+          } catch (cleanupError) {
+            console.error("Unable to clean up failed cloud room draft", cleanupError);
+          }
           toast.error(
-            "Could not publish the session to Supabase. No invite link was created."
+            "Could not publish the session to Neon. No invite link was created."
           );
           return;
         }
@@ -370,12 +373,6 @@ Join here: ${generatedLink}`;
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Creating..." : "Create Session"}
           </Button>
-          {isSupabaseConfigured && (
-            <TurnstileChallenge
-              action="create_group_session"
-              onTokenChange={setCaptchaToken}
-            />
-          )}
         </Card>
       </form>
 

@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { TurnstileChallenge } from "@/components/TurnstileChallenge";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Dialog,
   DialogContent,
@@ -28,13 +28,13 @@ import { formatTime } from "@/lib/time";
 import { getSessionParticipants, addParticipant } from "@/lib/participants";
 import {
   getGroupJoinErrorMessage,
-  isSupabaseConfigured,
-  isTurnstileConfigured,
+  isNeonConfigured,
   normalizeDisplayName,
   saveDisplayName,
-} from "@/lib/supabase";
+} from "@/lib/neon";
 import {
   deleteCloudGroupSession,
+  getCloudGroupSessionByPayloadId,
   joinCloudGroupSession,
 } from "@/lib/cloudGroupSessions";
 import {
@@ -46,6 +46,8 @@ import ParticipantBadge from "@/components/ParticipantBadge";
 import { FileText, Play, Trash2, Save, Users, Plus } from "lucide-react";
 
 export default function GroupSessions() {
+  const { user } = useAuth();
+  const isSupabaseConfigured = isNeonConfigured && Boolean(user);
   const [, setLocation] = useLocation();
   const [sessions, setSessions] = useState<GroupSession[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,7 +60,6 @@ export default function GroupSessions() {
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [now, setNow] = useState(() => Date.now());
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -103,7 +104,7 @@ export default function GroupSessions() {
     if (!confirm("Cancel this group session for everyone?")) return;
 
     try {
-      if (isSupabaseConfigured && session.payloadSessionId) {
+      if (isSupabaseConfigured && session.payloadSessionId && await getCloudGroupSessionByPayloadId(session.payloadSessionId)) {
         await deleteCloudGroupSession(session.payloadSessionId);
       }
       await deleteGroupSession(session.id);
@@ -157,21 +158,14 @@ export default function GroupSessions() {
 
     try {
       const name = normalizeDisplayName(participantName);
-      if (isSupabaseConfigured && !isTurnstileConfigured) {
-        toast.error("Configure Turnstile before joining");
-        releaseActiveGroupSession(activeSessionKey);
-        return;
-      }
-      if (isSupabaseConfigured && !captchaToken) {
-        toast.error("Complete the CAPTCHA before joining");
-        releaseActiveGroupSession(activeSessionKey);
-        return;
-      }
-      if (isSupabaseConfigured && joinSession.payloadSessionId) {
+      const connectedRoom = isSupabaseConfigured && joinSession.payloadSessionId
+        ? await getCloudGroupSessionByPayloadId(joinSession.payloadSessionId)
+        : null;
+      if (connectedRoom && joinSession.payloadSessionId) {
         await joinCloudGroupSession(
           joinSession.payloadSessionId,
           name,
-          captchaToken ?? undefined
+          undefined
         );
       } else {
         await saveDisplayName(name);
@@ -180,7 +174,6 @@ export default function GroupSessions() {
       toast.success("You've joined the session!");
       setShowJoinDialog(false);
       setJoinSession(null);
-      setCaptchaToken(null);
       setLocation(`/active-group/${joinSession.id}`);
     } catch (error) {
       releaseActiveGroupSession(activeSessionKey);
@@ -419,12 +412,7 @@ export default function GroupSessions() {
                   : "This name is stored locally in this browser."}
               </p>
             </div>
-            {isSupabaseConfigured && (
-              <TurnstileChallenge
-                action="join_group_session"
-                onTokenChange={setCaptchaToken}
-              />
-            )}
+
             <Button onClick={confirmJoinSession} className="w-full">
               Join Session
             </Button>

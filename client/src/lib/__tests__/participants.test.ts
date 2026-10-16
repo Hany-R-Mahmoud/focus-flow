@@ -4,7 +4,7 @@ import {
   DisplayNameRequiredError,
   DisplayNameTakenError,
   normalizeDisplayName,
-} from "../supabase";
+} from "../neon";
 
 class TestStorage implements Storage {
   readonly #values = new Map<string, string>();

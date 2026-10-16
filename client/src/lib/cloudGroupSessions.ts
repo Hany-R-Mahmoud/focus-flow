@@ -9,7 +9,8 @@ import {
   saveDisplayName,
   supabase,
   SupabaseIntegrationError,
-} from "./supabase";
+  isCloudSessionActive,
+} from "./neon";
 import type { GroupSessionPayload } from "./groupSession";
 
 const CloudGroupSessionSchema = z.object({
@@ -30,14 +31,14 @@ const CloudGroupSessionSchema = z.object({
 const JoinResultSchema = z.array(
   z.object({
     session_id: z.string().uuid(),
-    participant_id: z.string().uuid(),
+    participant_id: z.string().min(1),
     display_name: z.string(),
     joined_at: z.string(),
   })
 );
 
 const ParticipantSchema = z.object({
-  user_id: z.string().uuid(),
+  user_id: z.string().min(1),
   display_name: z.string().min(1),
   joined_at: z.string(),
 });
@@ -50,7 +51,7 @@ const PresenceSchema = z.object({
 export type CloudGroupSession = z.infer<typeof CloudGroupSessionSchema>;
 
 function getClient(): NonNullable<typeof supabase> | null {
-  return supabase;
+  return isCloudSessionActive() ? supabase : null;
 }
 
 function parseGroupSession(value: unknown): CloudGroupSession {
@@ -177,7 +178,8 @@ export async function deleteCloudGroupSession(
   const result = await client
     .from("group_sessions")
     .delete()
-    .eq("payload_session_id", payloadSessionId);
+    .eq("payload_session_id", payloadSessionId)
+    .select("id");
   if (result.error) {
     throw new SupabaseIntegrationError(
       "Failed to cancel the cloud group session",
@@ -186,6 +188,7 @@ export async function deleteCloudGroupSession(
       }
     );
   }
+  if (!result.data?.length) throw new SupabaseIntegrationError("Only the organizer can cancel a connected room");
 }
 
 export async function joinCloudGroupSession(
@@ -261,85 +264,52 @@ export async function getCloudGroupParticipants(
 
 export async function subscribeToCloudGroupPresence(
   payloadSessionId: string,
-  displayName: string,
+  _displayName: string,
   onChange: (participants: Participant[]) => void,
   onLeave?: (displayName: string) => void
 ): Promise<(() => void) | null> {
   const client = getClient();
-  if (!client || !isSupabaseConfigured) return null;
+  if (!client) return null;
 
-  const user = await ensureAnonymousUser(displayName);
-  if (!user) return null;
-
-  const channel = client.channel(`group-session:${payloadSessionId}`, {
-    config: { presence: { key: user.id } },
-  });
-  let presenceReady = false;
-  const emitParticipants = () => {
-    const participants = Object.entries(channel.presenceState()).flatMap(
-      ([userId, entries]) => {
-        const entry = entries[0];
-        const parsed = PresenceSchema.safeParse(entry);
-        if (!parsed.success) return [];
-        return [
-          {
-            id: userId,
-            sessionId: payloadSessionId,
-            name: parsed.data.display_name,
-            joinedAt: parsed.data.joined_at,
-          },
-        ];
+  let disposed = false;
+  let pending = false;
+  let known = new Map<string, string>();
+  const poll = async () => {
+    if (disposed || pending) return;
+    pending = true;
+    try {
+      const heartbeat = await client.rpc("touch_group_session_presence", {
+        requested_payload_session_id: payloadSessionId,
+      });
+      if (heartbeat.error) throw new SupabaseIntegrationError("Presence heartbeat failed", { cause: heartbeat.error });
+      const result = await client.rpc("get_live_group_participants", {
+        requested_payload_session_id: payloadSessionId,
+      });
+      if (result.error) throw new SupabaseIntegrationError("Unable to read live participants", { cause: result.error });
+      const participants = z.array(ParticipantSchema).parse(result.data).map(p => ({
+        id: p.user_id, sessionId: payloadSessionId, name: p.display_name, joinedAt: p.joined_at,
+      }));
+      if (!disposed) {
+        const next = new Map(participants.map(p => [p.id, p.name]));
+        known.forEach((name, id) => {
+          if (!next.has(id)) onLeave?.(name);
+        });
+        known = next;
+        onChange(participants);
       }
-    );
-    onChange(participants);
+    } finally {
+      pending = false;
+    }
   };
-
-  channel.on("presence", { event: "sync" }, () => {
-    presenceReady = true;
-    emitParticipants();
-  });
-  channel.on("presence", { event: "leave" }, ({ leftPresences }) => {
-    if (!presenceReady || !onLeave) return;
-    const parsed = z.array(PresenceSchema).safeParse(leftPresences);
-    if (!parsed.success) return;
-    parsed.data.forEach(presence => onLeave(presence.display_name));
-  });
-  await new Promise<void>((resolve, reject) => {
-    channel.subscribe(status => {
-      if (status === "SUBSCRIBED") {
-        void channel
-          .track({
-            display_name:
-              displayName.trim() || getStoredDisplayName() || "Anonymous",
-            joined_at: new Date().toISOString(),
-          })
-          .then(result => {
-            if (result !== "ok") {
-              reject(
-                new SupabaseIntegrationError(
-                  `Failed to publish presence: ${result}`
-                )
-              );
-              return;
-            }
-            emitParticipants();
-            resolve();
-          });
-      } else if (
-        status === "CHANNEL_ERROR" ||
-        status === "TIMED_OUT" ||
-        status === "CLOSED"
-      ) {
-        reject(
-          new SupabaseIntegrationError(
-            `Cloud presence channel ${status.toLowerCase()}`
-          )
-        );
-      }
-    });
-  });
-
+  await poll();
+  const interval = window.setInterval(() => {
+    void poll().catch(error => console.warn("Presence polling unavailable", error));
+  }, 12_000);
   return () => {
-    void client.removeChannel(channel);
+    disposed = true;
+    window.clearInterval(interval);
+    void client.rpc("leave_group_session_presence", {
+      requested_payload_session_id: payloadSessionId,
+    });
   };
 }

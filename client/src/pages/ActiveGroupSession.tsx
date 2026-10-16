@@ -24,7 +24,8 @@ import {
   removeParticipantByName,
   type Participant,
 } from "@/lib/participants";
-import { getStoredDisplayName, isSupabaseConfigured } from "@/lib/supabase";
+import { getStoredDisplayName, isNeonConfigured } from "@/lib/neon";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   claimActiveGroupSession,
   refreshActiveGroupSession,
@@ -71,6 +72,8 @@ function isDistractionList(value: unknown): value is Distraction[] {
 }
 
 export default function ActiveGroupSession() {
+  const { user } = useAuth();
+  const isSupabaseConfigured = isNeonConfigured && Boolean(user);
   const [, setLocation] = useLocation();
   const params = useParams<{ id: string }>();
   const sessionId = params?.id;
@@ -246,16 +249,13 @@ export default function ActiveGroupSession() {
       setCloudPresenceActive(false);
       cleanup?.();
     };
-  }, [session]);
+  }, [session, isSupabaseConfigured]);
 
   useEffect(() => {
     if (!session) return;
 
     const refreshLocalData = () => {
-      if (
-        !cloudPresenceActive &&
-        !(isSupabaseConfigured && session.payloadSessionId)
-      ) {
+      if (!cloudPresenceActive) {
         setParticipants(getSessionParticipants(session.id));
       }
       setActivityEvents(getActivityLog(session.id));
@@ -266,7 +266,7 @@ export default function ActiveGroupSession() {
   }, [cloudPresenceActive, session]);
 
   useEffect(() => {
-    if (!session || !isSupabaseConfigured || !session.payloadSessionId) return;
+    if (!session || !isSupabaseConfigured || !cloudPresenceActive || !session.payloadSessionId) return;
 
     let cancelled = false;
     const checkSession = async () => {
@@ -289,7 +289,7 @@ export default function ActiveGroupSession() {
       cancelled = true;
       window.clearInterval(interval);
     };
-  }, [session]);
+  }, [session, cloudPresenceActive, isSupabaseConfigured]);
 
   const formatTime = (ms: number): string => {
     const totalSeconds = Math.floor(ms / 1000);
@@ -424,7 +424,7 @@ export default function ActiveGroupSession() {
     if (!confirm("Cancel this group session for everyone?")) return;
 
     try {
-      if (isSupabaseConfigured && session.payloadSessionId) {
+      if (isSupabaseConfigured && session.payloadSessionId && await getCloudGroupSessionByPayloadId(session.payloadSessionId)) {
         await deleteCloudGroupSession(session.payloadSessionId);
       }
       await deleteGroupSession(session.id);

@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { TurnstileChallenge } from "@/components/TurnstileChallenge";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import {
   createGroupSession,
@@ -22,11 +22,10 @@ import type { GroupSession } from "@/lib/db";
 import { addParticipant } from "@/lib/participants";
 import {
   getGroupJoinErrorMessage,
-  isSupabaseConfigured,
-  isTurnstileConfigured,
+  isNeonConfigured,
   normalizeDisplayName,
   saveDisplayName,
-} from "@/lib/supabase";
+} from "@/lib/neon";
 import {
   cloudGroupSessionToLocal,
   getCloudGroupSessionByPayloadId,
@@ -46,6 +45,8 @@ import { formatTime } from "@/lib/time";
 import { AlertCircle, Users, Link as LinkIcon } from "lucide-react";
 
 export default function GroupSessionPreview() {
+  const { user, ready } = useAuth();
+  const isSupabaseConfigured = isNeonConfigured && Boolean(user);
   const [, setLocation] = useLocation();
   const [session, setSession] = useState<GroupSession | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,15 +57,17 @@ export default function GroupSessionPreview() {
   const [pendingPayload, setPendingPayload] =
     useState<GroupSessionPayload | null>(null);
   const [joining, setJoining] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [cloudRoomFound, setCloudRoomFound] = useState(false);
 
   useEffect(() => {
+    if (!ready) return;
     let cancelled = false;
 
     const loadSession = async () => {
       setLoading(true);
       setError(null);
       setSession(null);
+      setCloudRoomFound(false);
 
       try {
         await initDB();
@@ -89,6 +92,7 @@ export default function GroupSessionPreview() {
             const cloudSession = await getCloudGroupSessionByPayloadId(
               extracted.sessionId
             );
+            if (!cancelled) setCloudRoomFound(Boolean(cloudSession));
             loadedSession = cloudSession
               ? cloudGroupSessionToLocal(
                   cloudSession,
@@ -101,7 +105,7 @@ export default function GroupSessionPreview() {
               extracted.sessionId
             );
           }
-          if (!loadedSession && !isSupabaseConfigured) {
+          if (!loadedSession) {
             const allSessions = await getGroupSessions();
             loadedSession =
               allSessions.find(
@@ -114,7 +118,7 @@ export default function GroupSessionPreview() {
               ) || null;
           }
 
-          if (!loadedSession && !isSupabaseConfigured) {
+          if (!loadedSession) {
             const now = new Date().toISOString();
             loadedSession = {
               id: extracted.sessionId,
@@ -169,7 +173,7 @@ export default function GroupSessionPreview() {
       cancelled = true;
       window.removeEventListener("hashchange", loadSession);
     };
-  }, []);
+  }, [ready, isSupabaseConfigured]);
 
   useEffect(() => {
     if (!session) return;
@@ -199,16 +203,6 @@ export default function GroupSessionPreview() {
     if (!session || joining) return;
 
     setJoining(true);
-    if (isSupabaseConfigured && !isTurnstileConfigured) {
-      toast.error("Configure Turnstile before joining");
-      setJoining(false);
-      return;
-    }
-    if (isSupabaseConfigured && !captchaToken) {
-      toast.error("Complete the CAPTCHA before joining");
-      setJoining(false);
-      return;
-    }
     const activeSessionKey =
       pendingPayload?.sessionId || session.payloadSessionId || session.id;
     if (!claimActiveGroupSession(activeSessionKey)) {
@@ -222,11 +216,11 @@ export default function GroupSessionPreview() {
       let joinedSession = session;
       if (pendingPayload) {
         await initDB();
-        const cloudJoined = isSupabaseConfigured
+        const cloudJoined = isSupabaseConfigured && cloudRoomFound
           ? await joinCloudGroupSession(
               pendingPayload.sessionId,
               name,
-              captchaToken ?? undefined
+              undefined
             )
           : null;
         const localSession = await getGroupSessionByPayloadId(
@@ -266,7 +260,7 @@ export default function GroupSessionPreview() {
         if (!isSupabaseConfigured) await saveDisplayName(name);
       }
 
-      if (!isSupabaseConfigured || !pendingPayload) {
+      if (!isSupabaseConfigured || !pendingPayload || !cloudRoomFound) {
         addParticipant(joinedSession.id, name);
       }
       setShowJoinDialog(false);
@@ -410,14 +404,22 @@ export default function GroupSessionPreview() {
           </div>
         )}
 
-        {/* Privacy Notice */}
-        <div className="bg-gray-50 p-4 rounded text-sm text-muted-foreground">
+        {/* Account rooms get a synchronized participant roster; guest rooms stay local. */}
+        <div className="bg-muted/50 p-4 rounded text-sm text-muted-foreground">
           <p className="font-medium mb-2">How it works:</p>
           <ul className="space-y-1 text-xs">
-            <li>• You join this session independently on your device</li>
-            <li>• Your personal session data stays private</li>
-            <li>• Your name is stored locally in this browser</li>
-            <li>• Live cross-device participant presence is not enabled</li>
+            <li>• Your personal focus session data stays private on this device</li>
+            {isSupabaseConfigured && cloudRoomFound ? (
+              <>
+                <li>• Your display name is visible to members of this connected room</li>
+                <li>• Participants in this room share a live roster through Neon</li>
+              </>
+            ) : (
+              <>
+                <li>• This invitation works locally without creating an account</li>
+                <li>• Live cross-device participant presence is not enabled in guest mode</li>
+              </>
+            )}
           </ul>
         </div>
 
@@ -468,17 +470,12 @@ export default function GroupSessionPreview() {
                 maxLength={50}
               />
               <p className="text-xs text-muted-foreground mt-1">
-                {isSupabaseConfigured
-                  ? "This display name is shared with people in this session."
-                  : "This name is stored locally in this browser."}
+                {isSupabaseConfigured && cloudRoomFound
+                  ? "Your name appears in this connected room's live roster."
+                  : "Your name stays in this browser for this local session."}
               </p>
             </div>
-            {isSupabaseConfigured && (
-              <TurnstileChallenge
-                action="join_group_session"
-                onTokenChange={setCaptchaToken}
-              />
-            )}
+
             <Button
               onClick={confirmJoinSession}
               className="w-full"
