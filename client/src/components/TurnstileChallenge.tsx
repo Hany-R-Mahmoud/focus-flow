@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { isSupabaseConfigured, turnstileSiteKey } from "@/lib/supabase";
+import { isSupabaseConfigured, turnstileSiteKey } from "@/lib/neon";
 
 type TurnstileStatus = "loading" | "ready" | "error" | "unconfigured";
 
