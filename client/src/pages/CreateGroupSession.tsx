@@ -365,12 +365,6 @@ Join here: ${generatedLink}`;
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Creating..." : "Create Session"}
           </Button>
-          {isSupabaseConfigured && (
-            <TurnstileChallenge
-              action="create_group_session"
-              onTokenChange={setCaptchaToken}
-            />
-          )}
         </Card>
       </form>
 
