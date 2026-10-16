@@ -8,9 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { TurnstileChallenge } from "@/components/TurnstileChallenge";
 import { toast } from "sonner";
 import { createGroupSession } from "@/lib/db";
-import { saveDisplayName } from "@/lib/supabase";
+import { saveDisplayName } from "@/lib/neon";
 import { syncGroupSessionToCloud } from "@/lib/cloudGroupSessions";
-import { isSupabaseConfigured, isTurnstileConfigured } from "@/lib/supabase";
+import { isSupabaseConfigured, isTurnstileConfigured } from "@/lib/neon";
 import {
   generateSessionId,
   generateGroupSessionLink,
