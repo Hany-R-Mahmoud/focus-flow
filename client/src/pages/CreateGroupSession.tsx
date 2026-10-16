@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { createGroupSession } from "@/lib/db";
+import { createGroupSession, deleteGroupSession } from "@/lib/db";
 import { saveDisplayName } from "@/lib/neon";
 import { syncGroupSessionToCloud } from "@/lib/cloudGroupSessions";
 import { isNeonConfigured } from "@/lib/neon";
@@ -143,12 +143,22 @@ export default function CreateGroupSession() {
             undefined
           );
         }
-        await syncGroupSessionToCloud(newPayload, undefined);
+        const cloudSession = await syncGroupSessionToCloud(newPayload, undefined);
+        if (isSupabaseConfigured && !cloudSession) {
+          throw new Error("The authenticated Neon session is unavailable");
+        }
       } catch (cloudError) {
         const message =
           cloudError instanceof Error ? cloudError.message : "Unknown error";
         console.warn(`Cloud group-session sync unavailable. ${message}`);
         if (isSupabaseConfigured) {
+          // Never leave a hidden local duplicate that can be shared as if it were
+          // a connected room. The visitor can fix the error and retry safely.
+          try {
+            await deleteGroupSession(savedSession.id);
+          } catch (cleanupError) {
+            console.error("Unable to clean up failed cloud room draft", cleanupError);
+          }
           toast.error(
             "Could not publish the session to Neon. No invite link was created."
           );
