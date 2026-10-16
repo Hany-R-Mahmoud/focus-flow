@@ -124,14 +124,6 @@ export default function CreateGroupSession() {
       }
 
       const link = generateGroupSessionLink(newPayload);
-      if (isSupabaseConfigured && !isTurnstileConfigured) {
-        toast.error("Configure Turnstile before creating a cloud session");
-        return;
-      }
-      if (isSupabaseConfigured && !captchaToken) {
-        toast.error("Complete the CAPTCHA before creating a cloud session");
-        return;
-      }
       const savedSession = await createGroupSession({
         payloadVersion: newPayload.version,
         title: newPayload.title,
