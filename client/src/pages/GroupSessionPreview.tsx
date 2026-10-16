@@ -204,16 +204,6 @@ export default function GroupSessionPreview() {
     if (!session || joining) return;
 
     setJoining(true);
-    if (isSupabaseConfigured && !isTurnstileConfigured) {
-      toast.error("Configure Turnstile before joining");
-      setJoining(false);
-      return;
-    }
-    if (isSupabaseConfigured && !captchaToken) {
-      toast.error("Complete the CAPTCHA before joining");
-      setJoining(false);
-      return;
-    }
     const activeSessionKey =
       pendingPayload?.sessionId || session.payloadSessionId || session.id;
     if (!claimActiveGroupSession(activeSessionKey)) {
