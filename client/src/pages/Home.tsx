@@ -6,11 +6,14 @@ import {
   Play,
   Sparkles,
   Users,
+  LogIn,
+  CircleUserRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import PwaInstallMenuAction from "@/components/PwaInstallMenuAction";
 import { useLocale } from "@/contexts/LocaleContext";
+import { useAuth } from "@/contexts/AuthContext";
 import StandaloneVisitorCounter from "@/components/StandaloneVisitorCounter";
 
 const steps = [
@@ -36,6 +39,7 @@ const steps = [
 
 export default function Home() {
   const { language, languageLabels, setLanguage, t } = useLocale();
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen overflow-hidden bg-background text-foreground">
@@ -70,6 +74,12 @@ export default function Home() {
               {languageLabels[language === "en" ? "ar" : "en"]}
             </Button>
             <PwaInstallMenuAction compact className="border border-border" />
+            <Button asChild size="sm" className="gap-2 rounded-xl bg-[var(--color-teal-dark)] text-white hover:opacity-90">
+              <a href={user ? "/settings" : "/auth/login"}>
+                {user ? <CircleUserRound size={16} /> : <LogIn size={16} />}
+                {user ? (language === "ar" ? "حسابي" : "My account") : (language === "ar" ? "تسجيل الدخول" : "Sign in")}
+              </a>
+            </Button>
             <Button
               asChild
               variant="ghost"
