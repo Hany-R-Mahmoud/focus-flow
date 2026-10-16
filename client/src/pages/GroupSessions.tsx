@@ -34,6 +34,7 @@ import {
 } from "@/lib/neon";
 import {
   deleteCloudGroupSession,
+  getCloudGroupSessionByPayloadId,
   joinCloudGroupSession,
 } from "@/lib/cloudGroupSessions";
 import {
@@ -103,7 +104,7 @@ export default function GroupSessions() {
     if (!confirm("Cancel this group session for everyone?")) return;
 
     try {
-      if (isSupabaseConfigured && session.payloadSessionId) {
+      if (isSupabaseConfigured && session.payloadSessionId && await getCloudGroupSessionByPayloadId(session.payloadSessionId)) {
         await deleteCloudGroupSession(session.payloadSessionId);
       }
       await deleteGroupSession(session.id);
@@ -157,7 +158,10 @@ export default function GroupSessions() {
 
     try {
       const name = normalizeDisplayName(participantName);
-      if (isSupabaseConfigured && joinSession.payloadSessionId) {
+      const connectedRoom = isSupabaseConfigured && joinSession.payloadSessionId
+        ? await getCloudGroupSessionByPayloadId(joinSession.payloadSessionId)
+        : null;
+      if (connectedRoom && joinSession.payloadSessionId) {
         await joinCloudGroupSession(
           joinSession.payloadSessionId,
           name,
