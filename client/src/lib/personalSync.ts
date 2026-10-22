@@ -158,7 +158,6 @@ export async function importGuestPersonal():Promise<{imported:number;skipped:num
     guest={templates,sessions,reviews};
   } finally {
     await selectDatabaseScope(user);
-    startPersonalSync(user);
   }
   let imported=0,skipped=0;
   for(const [kind,items] of [["template",guest!.templates],["session",guest!.sessions],["review",guest!.reviews]] as const){
@@ -167,6 +166,7 @@ export async function importGuestPersonal():Promise<{imported:number;skipped:num
       else skipped++;
     }
   }
+  startPersonalSync(user);
   await syncPersonal();
   return {imported,skipped};
 }
