@@ -32,12 +32,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     try {
       const result = await neon.auth.getSession();
+      if(result.error) throw new Error(result.error.message);
       setUser((result.data?.user ?? null) as FocusUser | null);
       setActiveCloudSession(Boolean(result.data?.user));
     } catch (error) {
       console.warn("Could not restore account session", error);
-      setUser(null);
-      setActiveCloudSession(false);
+      // A temporary offline Auth failure must not switch a signed-in account to guest.
+      // Keep the last verified identity until an explicit sign-out or verified empty session.
     } finally {
       setReady(true);
     }
