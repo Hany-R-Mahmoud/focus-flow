@@ -1,6 +1,6 @@
 import { neon } from "./neon";
 import {
-  getTemplates, getSessions, getReviews, applyPersonalRemote, getAccountScope,
+  getTemplates, getSessions, getReviews, applyPersonalRemote, getAccountScope, selectDatabaseScope, addImportedPersonal,
   type SessionTemplate, type FocusSession, type DailyReview,
 } from "./db";
 
@@ -147,6 +147,26 @@ export function startPersonalSync(user:string){
   return stopPersonalSync;
 }
 /** Upload local guest data into the signed-in account only on an explicit user action. */
-export async function importGuestPersonal():Promise<void>{
-  throw new Error("Guest import requires an explicit conflict-safe import preview; use Settings export as backup for now.");
+export async function importGuestPersonal():Promise<{imported:number;skipped:number}>{
+  const user=activeUser;
+  if(!user || !current())throw new Error("Sign in to import guest records");
+  stopPersonalSync();
+  let guest:{templates:SessionTemplate[];sessions:FocusSession[];reviews:DailyReview[]};
+  try {
+    await selectDatabaseScope(null);
+    const [templates,sessions,reviews]=await Promise.all([getTemplates(),getSessions(),getReviews()]);
+    guest={templates,sessions,reviews};
+  } finally {
+    await selectDatabaseScope(user);
+    startPersonalSync(user);
+  }
+  let imported=0,skipped=0;
+  for(const [kind,items] of [["template",guest!.templates],["session",guest!.sessions],["review",guest!.reviews]] as const){
+    for(const item of items){
+      if(await addImportedPersonal(kind,item))imported++;
+      else skipped++;
+    }
+  }
+  await syncPersonal();
+  return {imported,skipped};
 }
