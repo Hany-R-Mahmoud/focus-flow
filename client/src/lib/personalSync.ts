@@ -19,7 +19,7 @@ let busy = false;
 let generation = 0;
 let timer: ReturnType<typeof setInterval> | null = null;
 const listeners = new Set<(s: SyncStatus)=>void>();
-const changed = () => { for(const cb of listeners) cb(status); };
+const changed = () => { for(const cb of Array.from(listeners)) cb(status); };
 const dataChanged = () => window.dispatchEvent(new Event("focusflow-data-updated"));
 const announce = (state:SyncStatus["state"], message:string, pending=0) => { status={state,message,pending}; changed(); };
 export const onSyncStatus = (cb:(s:SyncStatus)=>void) => {listeners.add(cb); cb(status); return () => {listeners.delete(cb);};};
@@ -83,7 +83,7 @@ export async function syncPersonal():Promise<void>{
     // Compute local mutations relative to the last acknowledged cloud snapshot.
     // Pending mutations persist even if a different browser changes the remote row.
     const keys=new Set([...Object.keys(local),...Object.keys(state.shadow),...Object.keys(state.pending)]);
-    for(const k of keys){
+    for(const k of Array.from(keys)){
       if(Object.prototype.hasOwnProperty.call(state.pending,k))continue;
       const localFingerprint=local[k] ? fingerprint(local[k].payload):null;
       const before=state.shadow[k];
@@ -114,7 +114,7 @@ export async function syncPersonal():Promise<void>{
     }
     // Server revisions are authoritative; only apply remote rows when local is clean.
     const after=await snapshot();
-    for(const [k,row] of remote){
+    for(const [k,row] of Array.from(remote.entries())){
       if(ticket!==generation || !current())return;
       if(Object.prototype.hasOwnProperty.call(state.pending,k))continue;
       const known=state.shadow[k];
