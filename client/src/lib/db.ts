@@ -76,6 +76,20 @@ export interface GroupSession {
 }
 
 const DB_NAME = "FocusSessionFlow";
+let accountScope: string | null = null;
+export function getAccountScope() { return accountScope; }
+
+/** The guest database is preserved byte-for-byte; accounts get isolated stores. */
+export async function selectDatabaseScope(userId: string | null): Promise<void> {
+  const next = userId ? encodeURIComponent(userId) : null;
+  if (next === accountScope) { await initDB(); return; }
+  db?.close();
+  db = null;
+  dbPromise = null;
+  accountScope = next;
+  await initDB();
+}
+
 const DB_VERSION = 3;
 
 const STORES = {
@@ -93,7 +107,7 @@ export async function initDB(): Promise<IDBDatabase> {
   if (dbPromise) return dbPromise;
 
   dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    const request = indexedDB.open(accountScope ? `${DB_NAME}_account_${accountScope}` : DB_NAME, DB_VERSION);
 
     request.onerror = () => reject(request.error);
     request.onsuccess = () => {
@@ -545,9 +559,10 @@ export async function seedDatabase(): Promise<void> {
   const seed = generateSeedData();
   await Promise.all([
     seedStoreIfEmpty(STORES.TEMPLATES, seed.templates),
-    seedStoreIfEmpty(STORES.SESSIONS, seed.sessions),
-    seedStoreIfEmpty(STORES.REVIEWS, seed.reviews),
-    seedStoreIfEmpty(STORES.GROUP_SESSIONS, seed.groupSessions),
+    // Never generate fictitious personal focus history for a real account.
+    ...(accountScope ? [] : [seedStoreIfEmpty(STORES.SESSIONS, seed.sessions)]),
+    ...(accountScope ? [] : [seedStoreIfEmpty(STORES.REVIEWS, seed.reviews)]),
+    ...(accountScope ? [] : [seedStoreIfEmpty(STORES.GROUP_SESSIONS, seed.groupSessions)]),
   ]);
 }
 
@@ -731,5 +746,22 @@ export async function clearAllData(): Promise<void> {
       clearLocalData();
       resolve();
     };
+  });
+}
+
+/** Merge remote records into the active account cache, without recreating records or emitting mutations. */
+export async function applyPersonalRemote(
+  kind: "template" | "session" | "review", id: string,
+  payload: SessionTemplate | FocusSession | DailyReview | null,
+): Promise<void> {
+  const database = getDB();
+  const storeName = kind === "template" ? STORES.TEMPLATES : kind === "session" ? STORES.SESSIONS : STORES.REVIEWS;
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction([storeName], "readwrite");
+    if (payload) tx.objectStore(storeName).put(payload);
+    else tx.objectStore(storeName).delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
   });
 }
