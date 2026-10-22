@@ -155,11 +155,6 @@ function AccountDataGate() {
 }
 
 function App() {
-  return () => {
-      cancelled = true;
-    };
-  }, []);
-
   return (
     <ThemeProvider defaultTheme="light" switchable>
       <LocaleProvider>
