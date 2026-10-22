@@ -43,6 +43,12 @@ export default function Dashboard() {
     weeklyFocusTime: 0,
   });
   const [now, setNow] = useState(() => Date.now());
+  const [cloudVersion, setCloudVersion] = useState(0);
+  useEffect(() => {
+    const refresh = () => setCloudVersion(v => v + 1);
+    window.addEventListener("focusflow-data-updated", refresh);
+    return () => window.removeEventListener("focusflow-data-updated", refresh);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -138,7 +144,7 @@ export default function Dashboard() {
       cancelled = true;
       window.removeEventListener("focus", refreshData);
     };
-  }, []);
+  }, [cloudVersion]);
 
   useEffect(() => {
     const interval = window.setInterval(() => setNow(Date.now()), 1000);

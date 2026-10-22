@@ -10,7 +10,8 @@ import Sidebar from "./components/Sidebar";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useSessionReminders } from "@/hooks/useSessionReminders";
-import { seedDatabase, initDB } from "@/lib/db";
+import { seedDatabase, selectDatabaseScope } from "@/lib/db";
+import { startPersonalSync, stopPersonalSync, syncPersonal } from "@/lib/personalSync";
 import SeoMetadata from "./components/SeoMetadata";
 import PwaInstallHelpDialog from "./components/PwaInstallHelpDialog";
 import PwaStatusBar from "./components/PwaStatusBar";
@@ -112,27 +113,48 @@ function AppContent() {
   );
 }
 
-function App() {
-  const [isReady, setIsReady] = useState(false);
-  const [startupError, setStartupError] = useState<string | null>(null);
-
+function AccountDataGate() {
+  const { ready, user } = useAuth();
+  const [scopeReady, setScopeReady] = useState<string | null>(null);
+  const [failure, setFailure] = useState<string | null>(null);
+  const scope = ready ? (user?.id ?? "guest") : null;
   useEffect(() => {
+    if (!scope) return;
     let cancelled = false;
-    initDB()
+    stopPersonalSync();
+    setScopeReady(null);
+    setFailure(null);
+    void selectDatabaseScope(user?.id ?? null)
       .then(() => seedDatabase())
       .then(() => {
-        if (!cancelled) setIsReady(true);
+        if (cancelled) return;
+        setScopeReady(scope);
+        if(user?.id) startPersonalSync(user.id);
       })
       .catch(error => {
-        console.error("Failed to initialize local data", error);
-        if (!cancelled) setStartupError("Local data could not be initialized.");
+        console.error("Could not open account data", error);
+        if(!cancelled)setFailure("Cannot open local account data.");
       });
-
+    return () => { cancelled = true; stopPersonalSync(); };
+  }, [scope, user?.id]);
+  useEffect(() => {
+    if(scopeReady !== scope || !user?.id)return;
+    const update = () => { void syncPersonal(); };
+    window.addEventListener("online",update);
+    window.addEventListener("focus",update);
+    document.addEventListener("visibilitychange",update);
     return () => {
-      cancelled = true;
+      window.removeEventListener("online",update);
+      window.removeEventListener("focus",update);
+      document.removeEventListener("visibilitychange",update);
     };
-  }, []);
+  }, [scopeReady, scope, user?.id]);
+  if(failure)return <div className="p-8 text-destructive">{failure}</div>;
+  if(!ready || scopeReady!==scope)return <div className="p-8">Preparing your focus space…</div>;
+  return <AppContent key={scope} />;
+}
 
+function App() {
   return (
     <ThemeProvider defaultTheme="light" switchable>
       <LocaleProvider>
@@ -141,21 +163,11 @@ function App() {
         <SeoMetadata />
         <PwaStatusBar />
         <ErrorBoundary>
-          {startupError ? (
-            <div className="min-h-screen p-8 text-center text-destructive">
-              {startupError}
-            </div>
-          ) : !isReady ? (
-            <div className="min-h-screen p-8 text-center text-muted-foreground">
-              Preparing your focus space…
-            </div>
-          ) : (
-            <TooltipProvider>
-              <Toaster />
-              <AppContent />
-              <PwaInstallHelpDialog />
-            </TooltipProvider>
-          )}
+          <TooltipProvider>
+            <Toaster />
+            <AccountDataGate />
+            <PwaInstallHelpDialog />
+          </TooltipProvider>
         </ErrorBoundary>
         </AuthProvider>
       </LocaleProvider>

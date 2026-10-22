@@ -83,7 +83,7 @@ export function clearLocalData(): void {
   const keysToRemove: string[] = [];
   for (let index = 0; index < localStorage.length; index += 1) {
     const key = localStorage.key(index);
-    if (key?.startsWith(LOCAL_DATA_PREFIX)) keysToRemove.push(key);
+    if (key?.startsWith(LOCAL_DATA_PREFIX)) if (!key.startsWith("focusflow_sync_v1_")) keysToRemove.push(key);
   }
   for (const key of keysToRemove) localStorage.removeItem(key);
 }

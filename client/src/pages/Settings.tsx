@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getSyncStatus, onSyncStatus, syncPersonal, importGuestPersonal } from "@/lib/personalSync";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -180,6 +181,9 @@ export default function Settings() {
   const { user, ready, signOut } = useAuth();
   const [preferences, setPreferences] =
     useState<UserPreferences>(loadUserPreferences);
+  const [syncStatus, setSyncStatus] = useState(getSyncStatus);
+  const [importingGuest, setImportingGuest] = useState(false);
+  useEffect(() => onSyncStatus(setSyncStatus), []);
   const wakeLockSupported =
     typeof navigator !== "undefined" && canKeepScreenAwake();
 
@@ -264,7 +268,7 @@ export default function Settings() {
           </div>
         </div>
         <p className="mb-4 text-sm leading-6 text-muted-foreground">
-          {language === "ar" ? "بيانات التركيز الشخصية محفوظة في المتصفح. تسجيل الدخول لا يمسح بيانات الضيف ولا ينقلها للسحابة تلقائيًا." : "Your personal focus data is kept on this browser. Signing in never deletes or automatically uploads guest data."}
+          {language === "ar" ? "بيانات التركيز محفوظة بدون إنترنت وتتزامن مع Neon بعد تسجيل الدخول. بيانات الضيف منفصلة ويمكن استيرادها باختيارك." : "Your focus data is stored offline and synced with Neon when signed in. Guest data remains separate until you import it."}
         </p>
         {user ? (
           <Button variant="outline" className="gap-2" onClick={() => { void signOut().catch(() => toast.error("Could not sign out")); }}>
@@ -274,6 +278,41 @@ export default function Settings() {
           <Button asChild className="gap-2"><a href="/auth/login"><LogIn size={17} />{language === "ar" ? "تسجيل الدخول بـ Google" : "Sign in with Google"}</a></Button>
         )}
       </Card>
+
+      {user && (
+        <Card className="p-6 mb-6" aria-live="polite">
+          <h2 className="text-lg font-bold mb-2">{language === "ar" ? "مزامنة البيانات" : "Cloud sync"}</h2>
+          <p className="text-sm text-muted-foreground mb-3">{syncStatus.message}</p>
+          <p className="text-xs text-muted-foreground mb-4">
+            {language === "ar" ? "التغييرات المعلّقة" : "Pending local changes"}: {syncStatus.pending}
+          </p>
+          {syncStatus.state === "conflict" && (
+            <p className="mb-3 text-sm text-destructive">
+              {language === "ar"
+                ? "هناك تعديل متعارض من جهاز آخر. لم تُحذف نسختك المحلية؛ صدّر نسخة احتياطية قبل محاولة حل التعارض."
+                : "Another device changed the same record. Your local version was preserved; export a backup before resolving the conflict."}
+            </p>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => void syncPersonal()}>
+              {language === "ar" ? "مزامنة الآن" : "Sync now"}
+            </Button>
+            <Button variant="outline" disabled={importingGuest} onClick={() => {
+              const message = language === "ar"
+                ? "سيتم نسخ بيانات الضيف الشخصية إلى حسابك، بدون حذف بيانات الضيف أو استبدال العناصر الموجودة بنفس الـ ID. هل تريد المتابعة؟"
+                : "Copy guest personal data into this account? Existing records with the same ID will not be overwritten, and guest data will remain intact.";
+              if(!confirm(message))return;
+              setImportingGuest(true);
+              void importGuestPersonal()
+                .then(({imported,skipped}) => toast.success(`Imported ${imported} records; skipped ${skipped} existing records`))
+                .catch(() => toast.error("Guest import failed. Guest data remains available."))
+                .finally(() => setImportingGuest(false));
+            }}>
+              {language === "ar" ? "استيراد بيانات الضيف" : "Import guest data"}
+            </Button>
+          </div>
+        </Card>
+      )}
 
       <Card className="p-6 mb-6">
         <h2 className="text-xl font-bold text-foreground mb-4">
