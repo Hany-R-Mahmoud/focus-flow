@@ -82,6 +82,12 @@ export default function SessionTemplates() {
     }
   }
 
+  useEffect(() => {
+    const refresh = () => { void loadTemplates(); };
+    window.addEventListener("focusflow-data-updated", refresh);
+    return () => window.removeEventListener("focusflow-data-updated", refresh);
+  }, []);
+
   return (
     <div className="p-6 md:p-8 pb-24 md:pb-8">
       <div className="flex items-center justify-between mb-8">
