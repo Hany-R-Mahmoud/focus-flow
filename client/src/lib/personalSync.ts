@@ -19,7 +19,8 @@ let busy = false;
 let generation = 0;
 let timer: ReturnType<typeof setInterval> | null = null;
 const listeners = new Set<(s: SyncStatus)=>void>();
-const changed = () => { for(const cb of listeners) cb(status); window.dispatchEvent(new Event("focusflow-data-updated")); };
+const changed = () => { for(const cb of listeners) cb(status); };
+const dataChanged = () => window.dispatchEvent(new Event("focusflow-data-updated"));
 const announce = (state:SyncStatus["state"], message:string, pending=0) => { status={state,message,pending}; changed(); };
 export const onSyncStatus = (cb:(s:SyncStatus)=>void) => {listeners.add(cb); cb(status); return () => {listeners.delete(cb);};};
 export const getSyncStatus = () => status;
@@ -122,6 +123,7 @@ export async function syncPersonal():Promise<void>{
       if(!known && localValue){conflicts++;continue;}
       if(!known || known.revision!==row.revision){
         await applyPersonalRemote(row.kind,row.record_id,row.deleted?null:row.payload);
+        dataChanged();
         state.shadow[k]={revision:row.revision,fingerprint:fingerprint(row.deleted?null:row.payload),deleted:row.deleted};
         save(user,state);
       }
@@ -167,6 +169,7 @@ export async function importGuestPersonal():Promise<{imported:number;skipped:num
     }
   }
   startPersonalSync(user);
+  dataChanged();
   await syncPersonal();
   return {imported,skipped};
 }
