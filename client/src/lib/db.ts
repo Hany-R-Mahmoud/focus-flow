@@ -558,7 +558,7 @@ export async function seedDatabase(): Promise<void> {
   const { generateSeedData } = await import("./seed");
   const seed = generateSeedData();
   await Promise.all([
-    seedStoreIfEmpty(STORES.TEMPLATES, seed.templates),
+    ...(accountScope ? [] : [seedStoreIfEmpty(STORES.TEMPLATES, seed.templates)]),
     // Never generate fictitious personal focus history for a real account.
     ...(accountScope ? [] : [seedStoreIfEmpty(STORES.SESSIONS, seed.sessions)]),
     ...(accountScope ? [] : [seedStoreIfEmpty(STORES.REVIEWS, seed.reviews)]),
@@ -763,5 +763,22 @@ export async function applyPersonalRemote(
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error);
+  });
+}
+
+/** Add a previous guest record to the current account without replacing an existing record. */
+export async function addImportedPersonal(kind: "template" | "session" | "review", record: SessionTemplate | FocusSession | DailyReview): Promise<boolean> {
+  const database = getDB();
+  const storeName = kind === "template" ? STORES.TEMPLATES : kind === "session" ? STORES.SESSIONS : STORES.REVIEWS;
+  return new Promise((resolve,reject)=>{
+    const tx=database.transaction([storeName],"readwrite");
+    const store=tx.objectStore(storeName);
+    let inserted=false;
+    const read=store.get(record.id);
+    read.onsuccess=()=>{ if(read.result === undefined){store.add(record);inserted=true;} };
+    read.onerror=()=>reject(read.error);
+    tx.oncomplete=()=>resolve(inserted);
+    tx.onerror=()=>reject(tx.error);
+    tx.onabort=()=>reject(tx.error);
   });
 }
