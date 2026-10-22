@@ -80,6 +80,12 @@ export default function DailyReview() {
     }
   }
 
+  useEffect(() => {
+    const refresh = () => { void loadReview(); };
+    window.addEventListener("focusflow-data-updated", refresh);
+    return () => window.removeEventListener("focusflow-data-updated", refresh);
+  }, []);
+
   return (
     <div className="p-6 md:p-8 pb-24 md:pb-8 max-w-2xl mx-auto">
       <h1 className="text-3xl font-bold text-foreground mb-8">
